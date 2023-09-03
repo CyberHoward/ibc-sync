@@ -72,10 +72,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	appabci "github.com/fatal-fruit/cosmapp/abci"
-	nskeeper "github.com/fatal-fruit/nameservice/keeper"
-	nameservice "github.com/fatal-fruit/nameservice/module"
-	nstypes "github.com/fatal-fruit/nameservice/types"
+	nskeeper "github.com/fatal-fruit/ns/keeper"
+	nameservice "github.com/fatal-fruit/ns/module"
+	nstypes "github.com/fatal-fruit/ns/types"
 )
 
 var (
@@ -178,7 +177,7 @@ func NewApp(
 	//
 	// bApp := baseapp.NewBaseApp(...)
 	// nonceMempool := mempool.NewSenderNonceMempool()
-	abciPropHandler := appabci.ProposalHandler{}
+	abciPropHandler := ProposalHandler{}
 	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
 	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
 

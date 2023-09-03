@@ -15,7 +15,7 @@ require (
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/cosmos-sdk v0.50.0-rc.0
 	github.com/cosmos/gogoproto v1.4.11
-	github.com/fatal-fruit/nameservice v0.0.0-20230713174252-098585f16f61
+	github.com/fatal-fruit/ns v0.0.0-20230903163219-27cdc88946c1
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
@@ -187,7 +187,4 @@ require (
 )
 
 // following versions might cause unexpected behavior
-replace (
-	github.com/fatal-fruit/nameservice => /Users/lg/github.com/glnro/fatal-fruit/nameservice
-	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-)
+replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
