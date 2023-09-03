@@ -72,6 +72,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	appabci "github.com/fatal-fruit/cosmapp/abci"
 	nskeeper "github.com/fatal-fruit/nameservice/keeper"
 	nameservice "github.com/fatal-fruit/nameservice/module"
 	nstypes "github.com/fatal-fruit/nameservice/types"
@@ -167,6 +168,19 @@ func NewApp(
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
+
+	// Below we could construct and set an application specific mempool and
+	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
+	// already set in the SDK's BaseApp, this shows an example of how to override
+	// them.
+	//
+	// Example:
+	//
+	// bApp := baseapp.NewBaseApp(...)
+	// nonceMempool := mempool.NewSenderNonceMempool()
+	abciPropHandler := appabci.ProposalHandler{}
+	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
+	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
