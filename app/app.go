@@ -91,11 +91,11 @@ var (
 )
 
 var (
-	_ runtime.AppI            = (*NeutrinoApp)(nil)
-	_ servertypes.Application = (*NeutrinoApp)(nil)
+	_ runtime.AppI            = (*App)(nil)
+	_ servertypes.Application = (*App)(nil)
 )
 
-type NeutrinoApp struct {
+type App struct {
 	*baseapp.BaseApp
 
 	legacyAmino       *codec.LegacyAmino //nolint:staticcheck
@@ -131,7 +131,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".neutrinod")
+	DefaultNodeHome = filepath.Join(userHomeDir, ".cosmappd")
 }
 
 func NewApp(
@@ -143,7 +143,7 @@ func NewApp(
 	homePath string,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) *NeutrinoApp {
+) *App {
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -187,7 +187,7 @@ func NewApp(
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 
-	app := &NeutrinoApp{
+	app := &App{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
 		txConfig:          txConfig,
@@ -410,20 +410,20 @@ func NewApp(
 	return app
 }
 
-func (app *NeutrinoApp) Name() string { return app.BaseApp.Name() }
+func (app *App) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *NeutrinoApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
-func (app *NeutrinoApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	return app.mm.EndBlock(ctx)
 }
 
 // InitChainer application update at chain initialization
-func (app *NeutrinoApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -432,11 +432,11 @@ func (app *NeutrinoApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
-func (app *NeutrinoApp) LoadHeight(height int64) error {
+func (app *App) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
 
-func (app *NeutrinoApp) ModuleAccountAddrs() map[string]bool {
+func (app *App) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -445,30 +445,30 @@ func (app *NeutrinoApp) ModuleAccountAddrs() map[string]bool {
 	return modAccAddrs
 }
 
-func (app *NeutrinoApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
+func (app *App) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
 }
 
-func (app *NeutrinoApp) LegacyAmino() *codec.LegacyAmino {
+func (app *App) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
 
-func (app *NeutrinoApp) AppCodec() codec.Codec {
+func (app *App) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
-func (app *NeutrinoApp) InterfaceRegistry() types.InterfaceRegistry {
+func (app *App) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
-func (app *NeutrinoApp) GetTxConfig() client.TxConfig {
+func (app *App) GetTxConfig() client.TxConfig {
 	return app.txConfig
 }
 
 // AutoCliOpts returns the autocli options for the app.
-func (app *NeutrinoApp) AutoCliOpts() autocli.AppOptions {
+func (app *App) AutoCliOpts() autocli.AppOptions {
 	modules := make(map[string]appmodule.AppModule, 0)
 	for _, m := range app.mm.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
@@ -488,19 +488,19 @@ func (app *NeutrinoApp) AutoCliOpts() autocli.AppOptions {
 }
 
 // DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
-func (app *NeutrinoApp) DefaultGenesis() map[string]json.RawMessage {
+func (app *App) DefaultGenesis() map[string]json.RawMessage {
 	return app.BasicManager.DefaultGenesis(app.appCodec)
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *NeutrinoApp) GetKey(storeKey string) *storetypes.KVStoreKey {
+func (app *App) GetKey(storeKey string) *storetypes.KVStoreKey {
 	return app.keys[storeKey]
 }
 
 // GetStoreKeys returns all the stored store keys.
-func (app *NeutrinoApp) GetStoreKeys() []storetypes.StoreKey {
+func (app *App) GetStoreKeys() []storetypes.StoreKey {
 	keys := make([]storetypes.StoreKey, len(app.keys))
 	for _, key := range app.keys {
 		keys = append(keys, key)
@@ -510,11 +510,11 @@ func (app *NeutrinoApp) GetStoreKeys() []storetypes.StoreKey {
 }
 
 // SimulationManager implements the SimulationApp interface
-func (app *NeutrinoApp) SimulationManager() *module.SimulationManager {
+func (app *App) SimulationManager() *module.SimulationManager {
 	return app.simulationManager
 }
 
-func (app *NeutrinoApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -534,12 +534,12 @@ func (app *NeutrinoApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	}
 }
 
-func (app *NeutrinoApp) RegisterTxService(clientCtx client.Context) {
+func (app *App) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
-func (app *NeutrinoApp) RegisterTendermintService(clientCtx client.Context) {
+func (app *App) RegisterTendermintService(clientCtx client.Context) {
 	cmtApp := server.NewCometABCIWrapper(app)
 	cmtservice.RegisterTendermintService(
 		clientCtx,
@@ -549,17 +549,17 @@ func (app *NeutrinoApp) RegisterTendermintService(clientCtx client.Context) {
 	)
 }
 
-func (app *NeutrinoApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+func (app *App) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
-func (app *NeutrinoApp) OnTxSucceeded(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
+func (app *App) OnTxSucceeded(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
 }
 
-func (app *NeutrinoApp) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
+func (app *App) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
 }
 
-func (app *NeutrinoApp) GetBaseApp() *baseapp.BaseApp {
+func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
@@ -582,7 +582,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // GetSubspace returns a param subspace for a given module name.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *NeutrinoApp) GetSubspace(moduleName string) paramstypes.Subspace {
+func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }

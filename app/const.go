@@ -1,9 +1,9 @@
 package app
 
 const (
-	Bech32Prefix         = "neutrino"
-	AppName              = "neutrino"
-	DefaultDenom         = "uneutrino"
+	Bech32Prefix         = "cosmos"
+	AppName              = "cosmos"
+	DefaultDenom         = "uatom"
 	Bech32PrefixAccAddr  = Bech32Prefix
 	Bech32PrefixAccPub   = Bech32Prefix + "pub"
 	Bech32PrefixValAddr  = Bech32Prefix + "valoper"

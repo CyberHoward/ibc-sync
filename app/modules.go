@@ -70,7 +70,7 @@ package app
 //)
 //
 //func appModules(
-//	app *NeutrinoApp,
+//	app *App,
 //	appCodec codec.Codec,
 //	txConfig client.TxConfig,
 //) []module.AppModule {

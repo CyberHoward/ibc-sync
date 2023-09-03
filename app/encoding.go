@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -25,10 +26,10 @@ func MakeEncodingConfig() EncodingConfig {
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
 			AddressCodec: address.Bech32Codec{
-				Bech32Prefix: "neutrino",
+				Bech32Prefix: sdk.Bech32MainPrefix,
 			},
 			ValidatorAddressCodec: address.Bech32Codec{
-				Bech32Prefix: "neutrino",
+				Bech32Prefix: sdk.Bech32MainPrefix,
 			},
 		},
 	})

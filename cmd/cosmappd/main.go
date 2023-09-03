@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fatal-fruit/neutrino/app"
+	"github.com/fatal-fruit/cosmapp/app"
 
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/fatal-fruit/neutrino/cmd/neutrinod/cmd"
+	"github.com/fatal-fruit/cosmapp/cmd/cosmappd/cmd"
 )
 
 func main() {

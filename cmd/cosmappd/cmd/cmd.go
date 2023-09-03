@@ -14,7 +14,7 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 
-	"github.com/fatal-fruit/neutrino/app"
+	"github.com/fatal-fruit/cosmapp/app"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"

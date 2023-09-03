@@ -25,8 +25,7 @@ import (
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	//"github.com/cosmos/ibc-go/v7/testing/simapp"
-	"github.com/fatal-fruit/neutrino/app"
+	"github.com/fatal-fruit/cosmapp/app"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -174,7 +173,7 @@ func appExport(
 	appOpts servertypes.AppOptions,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
-	var neutrinoApp *app.NeutrinoApp
+	var exportApp *app.App
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
@@ -193,7 +192,7 @@ func appExport(
 		loadLatest = true
 	}
 
-	neutrinoApp = app.NewApp(
+	exportApp = app.NewApp(
 		logger,
 		db,
 		traceStore,
@@ -204,16 +203,16 @@ func appExport(
 	)
 
 	if height != -1 {
-		if err := neutrinoApp.LoadHeight(height); err != nil {
+		if err := exportApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	}
 
-	return neutrinoApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
+	return exportApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
 }
 
 var tempDir = func() string {
-	dir, err := os.MkdirTemp("", "neutrino")
+	dir, err := os.MkdirTemp("", "cosmapp")
 	if err != nil {
 		dir = app.DefaultNodeHome
 	}

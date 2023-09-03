@@ -54,8 +54,8 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
 # ********** process linker flags **********
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=neutrino \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=neutrinod \
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=cosmapp \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=cosmappd \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
@@ -88,12 +88,12 @@ all: lint test install
 ###############################################################################
 
 install: enforce-go-version
-	@echo "Installing neutrinod..."
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/neutrinod
+	@echo "Installing cosmappd..."
+	go install -mod=readonly $(BUILD_FLAGS) ./cmd/cosmappd
 
 build: enforce-go-version
-	@echo "Building neutrinod..."
-	go build $(BUILD_FLAGS) -o $(BUILDDIR)/ ./cmd/neutrinod
+	@echo "Building cosmappd..."
+	go build $(BUILD_FLAGS) -o $(BUILDDIR)/ ./cmd/cosmappd
 
 enforce-go-version:
 	@echo "Go version: $(GO_MAJOR_VERSION).$(GO_MINOR_VERSION)"
@@ -137,20 +137,20 @@ format:
 ###############################################################################
 
 start-localnet: build
-	rm -rf ~/.neutrinod
-	./build/neutrinod init liveness --chain-id neutrino-1 --default-denom uneutrino
-	./build/neutrinod config set client chain-id neutrino-1
-	./build/neutrinod config set client keyring-backend test
-	./build/neutrinod keys add val
-	./build/neutrinod keys add alice
-	./build/neutrinod keys add bob
-	./build/neutrinod genesis add-genesis-account val 10000000000000000000000000uneutrino
-	./build/neutrinod genesis add-genesis-account alice 1000000000000000000uneutrino
-	./build/neutrinod genesis add-genesis-account bob 1000000000000000000uneutrino
-	./build/neutrinod genesis gentx val 1000000000uneutrino --chain-id neutrino-
-	./build/neutrinod genesis collect-gentxs
-	sed -i.bak'' 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025uneutrino"/' ~/.neutrinod/config/app.toml
-	./build/neutrinod start
+	rm -rf ~/.cosmappd
+	./build/cosmappd init liveness --chain-id cosmos-1 --default-denom uatom
+	./build/cosmappd config set client chain-id cosmos-1
+	./build/cosmappd config set client keyring-backend test
+	./build/cosmappd keys add val
+	./build/cosmappd keys add alice
+	./build/cosmappd keys add bob
+	./build/cosmappd genesis add-genesis-account val 10000000000000000000000000uatom
+	./build/cosmappd genesis add-genesis-account alice 1000000000000000000uatom
+	./build/cosmappd genesis add-genesis-account bob 1000000000000000000uatom
+	./build/cosmappd genesis gentx val 1000000000uatom --chain-id cosmos-
+	./build/cosmappd genesis collect-gentxs
+	sed -i.bak'' 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025uatom"/' ~/.cosmappd/config/app.toml
+	./build/cosmappd start
 
 ###############################################################################
 ###                           Tests & Simulation                            ###

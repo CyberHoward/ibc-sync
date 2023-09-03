@@ -1,4 +1,4 @@
-module github.com/fatal-fruit/neutrino
+module github.com/fatal-fruit/cosmapp
 
 go 1.21
 
