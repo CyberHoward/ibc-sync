@@ -2,10 +2,10 @@ package app
 
 import (
 	"cosmossdk.io/log"
-	"encoding/json"
+	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	nstypes "github.com/fatal-fruit/ns/types"
 )
 
 type ProposalHandler struct {
@@ -18,22 +18,23 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		var proposalTxs [][]byte
 
 		for _, txBytes := range req.Txs {
-			tx := txtypes.Tx{}
-
-			err := json.Unmarshal(txBytes, &tx)
+			txconfig := h.app.GetTxConfig()
+			txDecoder := txconfig.TxDecoder()
+			messages, err := txDecoder(txBytes)
 			if err != nil {
-				return nil, err
+				h.logger.Info("Error Decoding txBytes")
+				return &abci.ResponsePrepareProposal{Txs: req.Txs}, err
 			}
-
-			messages := tx.GetMsgs()
-			for _, msg := range messages {
-				if sdk.MsgTypeURL(msg) == "Bid" {
-					h.logger.Info("Bid Found")
-					//	to be altered when bid added
+			sdkMsgs := messages.GetMsgs()
+			h.logger.Info(fmt.Sprintf("This is the txMsg: %v", len(sdkMsgs)))
+			for _, msg := range sdkMsgs {
+				switch msg := msg.(type) {
+				case *nstypes.MsgBid:
+					h.logger.Info(fmt.Sprintf("MsgBid: %v", msg.String()))
 				}
 			}
 			proposalTxs = append(proposalTxs, txBytes)
 		}
-		return nil, nil
+		return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
 	}
 }
