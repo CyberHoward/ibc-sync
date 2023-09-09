@@ -218,16 +218,19 @@ func NewApp(
 	//
 	// bApp := baseapp.NewBaseApp(...)
 	// nonceMempool := mempool.NewSenderNonceMempool()
-	si := SignerInfo{
-		keyName:    "val",
-		keyringDir: DefaultNodeHome,
-	}
-	bp := &AppBidProvider{
-		logger:     logger,
-		codec:      app.appCodec,
-		signerInfo: si,
+
+	bp := &LocalBidProvider{
+		logger: logger,
+		codec:  app.appCodec,
+		signer: LocalSigner{
+			keyName:    "val",
+			keyringDir: DefaultNodeHome,
+		},
 		txConfig:   app.txConfig,
 		acctKeeper: app.AccountKeeper,
+	}
+	if err := bp.Init(); err != nil {
+		panic(err)
 	}
 	abciPropHandler := ProposalHandler{*app, logger, bp}
 	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,7 +11,6 @@ import (
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/go-bip39"
 	"github.com/fatal-fruit/cosmapp/app"
@@ -21,38 +19,11 @@ import (
 	"testing"
 )
 
-const (
-	keyringPassphrase = "testpassphrase"
-	keyringAppName    = "cosmappd"
-)
-
 type testFixture struct {
 	ctx sdk.Context
 	k   authkeeper.AccountKeeper
 
 	addrs []sdk.AccAddress
-}
-
-//func initFixture(t *testing.T) *testFixture {
-//	encCfg := moduletestutil.MakeTestEncodingConfig()
-//	addrs := simtestutil.CreateIncrementalAccounts(3)
-//
-//
-//}
-
-func mockTxFactory(txCfg client.TxConfig) tx.Factory {
-	return tx.Factory{}.
-		WithTxConfig(txCfg).
-		WithAccountNumber(50).
-		WithSequence(23).
-		WithFees("50stake").
-		WithMemo("memo").
-		WithChainID("test-chain")
-}
-
-func newTestTxConfig() (client.TxConfig, codec.Codec) {
-	encodingConfig := moduletestutil.MakeTestEncodingConfig()
-	return authtx.NewTxConfig(codec.NewProtoCodec(encodingConfig.InterfaceRegistry), authtx.DefaultSignModes), encodingConfig.Codec
 }
 
 func TestSigning(t *testing.T) {
@@ -68,7 +39,7 @@ func TestSigning(t *testing.T) {
 	tmpDir, err := os.MkdirTemp(nodeDir, "test-")
 	require.NoError(t, err)
 	//
-	kb, err := keyring.New(keyringAppName, keyring.BackendTest, tmpDir, nil, encCfg.Codec)
+	kb, err := keyring.New("app", keyring.BackendTest, tmpDir, nil, encCfg.Codec)
 	require.NoError(t, err)
 	//
 	keyringAlgos, _ := kb.SupportedAlgorithms()
