@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	abci2 "github.com/fatal-fruit/cosmapp/abci"
+	"github.com/fatal-fruit/cosmapp/provider"
 	"io"
 	"os"
 	"path/filepath"
@@ -219,20 +221,20 @@ func NewApp(
 	// bApp := baseapp.NewBaseApp(...)
 	// nonceMempool := mempool.NewSenderNonceMempool()
 
-	bp := &LocalBidProvider{
-		logger: logger,
-		codec:  app.appCodec,
-		signer: LocalSigner{
-			keyName:    "val",
-			keyringDir: DefaultNodeHome,
+	bp := &provider.LocalBidProvider{
+		Logger: logger,
+		Codec:  app.appCodec,
+		Signer: provider.LocalSigner{
+			KeyName:    "val",
+			KeyringDir: DefaultNodeHome,
 		},
-		txConfig:   app.txConfig,
-		acctKeeper: app.AccountKeeper,
+		TxConfig:   app.txConfig,
+		AcctKeeper: app.AccountKeeper,
 	}
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	abciPropHandler := ProposalHandler{*app, logger, bp}
+	abciPropHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
 	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
 	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
 

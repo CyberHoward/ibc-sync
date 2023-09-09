@@ -1,17 +1,19 @@
-package app
+package abci
 
 import (
 	"cosmossdk.io/log"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/fatal-fruit/cosmapp/provider"
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
 type ProposalHandler struct {
-	app         App
-	logger      log.Logger
-	bidProvider BidProvider
+	TxConfig    client.TxConfig
+	Logger      log.Logger
+	BidProvider provider.BidProvider
 }
 
 func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
@@ -19,11 +21,10 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		var proposalTxs [][]byte
 
 		for _, txBytes := range req.Txs {
-			txconfig := h.app.GetTxConfig()
-			txDecoder := txconfig.TxDecoder()
+			txDecoder := h.TxConfig.TxDecoder()
 			messages, err := txDecoder(txBytes)
 			if err != nil {
-				h.logger.Error("Error Decoding txBytes")
+				h.Logger.Error("Error Decoding txBytes")
 				return &abci.ResponsePrepareProposal{Txs: req.Txs}, err
 			}
 			sdkMsgs := messages.GetMsgs()
@@ -33,11 +34,11 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 				switch msg := msg.(type) {
 				case *nstypes.MsgBid:
 					// Get matching bid from matching engine
-					newTx := h.bidProvider.GetMatchingBid(ctx, msg)
+					newTx := h.BidProvider.GetMatchingBid(ctx, msg)
 					// Encode transaction to add to block proposal
-					encTx, err := txconfig.TxEncoder()(newTx)
+					encTx, err := h.TxConfig.TxEncoder()(newTx)
 					if err != nil {
-						h.logger.Info(fmt.Sprintf("Error sniping bid: %v", err.Error()))
+						h.Logger.Info(fmt.Sprintf("Error sniping bid: %v", err.Error()))
 					}
 
 					updatedTx = encTx

@@ -1,4 +1,4 @@
-package app
+package provider
 
 import (
 	"cosmossdk.io/log"
@@ -21,27 +21,27 @@ type BidProvider interface {
 }
 
 type LocalSigner struct {
-	keyName    string
-	keyringDir string
+	KeyName    string
+	KeyringDir string
 	codec      codec.Codec
 	txConfig   client.TxConfig
 	kb         keyring.Keyring
 	lg         log.Logger
 }
 type LocalBidProvider struct {
-	logger     log.Logger
-	codec      codec.Codec
-	signer     LocalSigner
-	txConfig   client.TxConfig
-	acctKeeper authkeeper.AccountKeeper
+	Logger     log.Logger
+	Codec      codec.Codec
+	Signer     LocalSigner
+	TxConfig   client.TxConfig
+	AcctKeeper authkeeper.AccountKeeper
 }
 
 func (bp *LocalBidProvider) Init() error {
-	return bp.signer.Init(bp.txConfig, bp.codec, bp.logger)
+	return bp.Signer.Init(bp.TxConfig, bp.Codec, bp.Logger)
 }
 
 func (ls *LocalSigner) Init(txCfg client.TxConfig, cdc codec.Codec, logger log.Logger) error {
-	if len(ls.keyName) == 0 || len(ls.keyringDir) == 0 {
+	if len(ls.KeyName) == 0 || len(ls.KeyringDir) == 0 {
 		return fmt.Errorf("keyName and keyringDir must be set")
 	}
 
@@ -49,7 +49,7 @@ func (ls *LocalSigner) Init(txCfg client.TxConfig, cdc codec.Codec, logger log.L
 	ls.codec = cdc
 	ls.lg = logger
 
-	kb, err := keyring.New(AppName, keyring.BackendTest, ls.keyringDir, nil, ls.codec)
+	kb, err := keyring.New("cosmos", keyring.BackendTest, ls.KeyringDir, nil, ls.codec)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (ls *LocalSigner) Init(txCfg client.TxConfig, cdc codec.Codec, logger log.L
 
 func (ls *LocalSigner) RetreiveSigner(ctx sdk.Context, actKeeper authkeeper.AccountKeeper) (types.AccountI, error) {
 	lg := ls.lg
-	addrBz, err := ls.kb.LookupAddressByKeyName(ls.keyName)
+	addrBz, err := ls.kb.LookupAddressByKeyName(ls.KeyName)
 
 	if err != nil {
 		lg.Error(fmt.Sprintf("Error retrieving address by key name: %v", err))
@@ -103,7 +103,7 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 	}
 	clientCtx := client.Context{}
 
-	err = authclient.SignTx(factory, clientCtx, ls.keyName, txBuilder, true, true)
+	err = authclient.SignTx(factory, clientCtx, ls.KeyName, txBuilder, true, true)
 	if err != nil {
 		ls.lg.Error(fmt.Sprintf("Error signing tx: %v", err))
 
@@ -113,9 +113,9 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 }
 
 func (b *LocalBidProvider) GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx {
-	acct, err := b.signer.RetreiveSigner(ctx, b.acctKeeper)
+	acct, err := b.Signer.RetreiveSigner(ctx, b.AcctKeeper)
 	if err != nil {
-		b.logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
+		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
 		return nil
 	}
 
@@ -126,6 +126,6 @@ func (b *LocalBidProvider) GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) 
 		Amount:         bid.Amount.MulInt(math.NewInt(2)),
 	}
 
-	newTx := b.signer.BuildAndSignTx(ctx, acct, msg)
+	newTx := b.Signer.BuildAndSignTx(ctx, acct, msg)
 	return newTx
 }
