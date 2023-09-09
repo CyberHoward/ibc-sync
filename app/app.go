@@ -199,6 +199,16 @@ func NewApp(
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
 
+	app.AccountKeeper = authkeeper.NewAccountKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
+		authtypes.ProtoBaseAccount,
+		maccPerms,
+		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
+		sdk.Bech32MainPrefix,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
 	// Below we could construct and set an application specific mempool and
 	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
 	// already set in the SDK's BaseApp, this shows an example of how to override
@@ -208,7 +218,18 @@ func NewApp(
 	//
 	// bApp := baseapp.NewBaseApp(...)
 	// nonceMempool := mempool.NewSenderNonceMempool()
-	abciPropHandler := ProposalHandler{*app, logger}
+	si := SignerInfo{
+		keyName:    "val",
+		keyringDir: DefaultNodeHome,
+	}
+	bp := &AppBidProvider{
+		logger:     logger,
+		codec:      app.appCodec,
+		signerInfo: si,
+		txConfig:   app.txConfig,
+		acctKeeper: app.AccountKeeper,
+	}
+	abciPropHandler := ProposalHandler{*app, logger, bp}
 	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
 	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
 

@@ -5,8 +5,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/codec/testutil"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -50,13 +53,30 @@ func MakeEncodingConfig() EncodingConfig {
 	}
 }
 
-func RegisterEncodingConfig() EncodingConfig {
-	encConfig := MakeEncodingConfig()
+func MakeTestEncodingConfig(modules ...module.AppModuleBasic) EncodingConfig {
+	aminoCodec := codec.NewLegacyAmino()
+	interfaceRegistry := testutil.CodecOptions{}.NewInterfaceRegistry()
+	codec := codec.NewProtoCodec(interfaceRegistry)
 
-	// std.RegisterLegacyAminoCodec(encConfig.Amino)
-	// std.RegisterInterfaces(encConfig.InterfaceRegistry)
-	// ModuleBasics.RegisterLegacyAminoCodec(encConfig.Amino)
-	// ModuleBasics.RegisterInterfaces(encConfig.InterfaceRegistry)
+	encCfg := EncodingConfig{
+		InterfaceRegistry: interfaceRegistry,
+		Marshaler:         codec,
+		TxConfig:          tx.NewTxConfig(codec, tx.DefaultSignModes),
+		Amino:             aminoCodec,
+	}
 
-	return encConfig
+	mb := module.NewBasicManager(modules...)
+
+	std.RegisterLegacyAminoCodec(encCfg.Amino)
+	std.RegisterInterfaces(encCfg.InterfaceRegistry)
+	mb.RegisterLegacyAminoCodec(encCfg.Amino)
+	mb.RegisterInterfaces(encCfg.InterfaceRegistry)
+
+	return encCfg
+}
+
+func MakeTestTxConfig() client.TxConfig {
+	interfaceRegistry := testutil.CodecOptions{}.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+	return tx.NewTxConfig(cdc, tx.DefaultSignModes)
 }

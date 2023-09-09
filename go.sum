@@ -427,8 +427,8 @@ github.com/envoyproxy/go-control-plane v0.9.9-0.20210512163311-63b5d3c536b0/go.m
 github.com/envoyproxy/go-control-plane v0.9.10-0.20210907150352-cf90f659a021/go.mod h1:AFq3mo9L8Lqqiid3OhADV3RfLJnjiw63cSpi+fDTRC0=
 github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1/go.mod h1:KJwIaB5Mv44NWtYuAOFCVOjcI94vtpEz2JU/D2v6IjE=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
-github.com/fatal-fruit/ns v0.0.0-20230903163219-27cdc88946c1 h1:pxWHoupYYs6ibb1TcZyVc9wDqKr3qB/evztTVV8dep4=
-github.com/fatal-fruit/ns v0.0.0-20230903163219-27cdc88946c1/go.mod h1:lhgm1fR7/Gyc7iXuMRbcqhiTTbhQPuZarSObjXxMwpc=
+github.com/fatal-fruit/ns v0.0.0-20230904112332-434c50dc9738 h1:CNthfOiemKYVBLO4iWuOdM8uK2y+tXoaHkqL5iaAQUc=
+github.com/fatal-fruit/ns v0.0.0-20230904112332-434c50dc9738/go.mod h1:lhgm1fR7/Gyc7iXuMRbcqhiTTbhQPuZarSObjXxMwpc=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=
