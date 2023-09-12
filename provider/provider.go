@@ -16,6 +16,18 @@ import (
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
+/*
+	This implementation is for demo purposes only and does not reflect all limitations and
+	constraints of a live distributed network.
+
+	Bid Provider is an embedded solution to demonstrate an interface an application could
+	leverage to extract MEV when building and proposing a block. In this example, the
+	application is building and signing transactions locally for the sake of a simplicity.
+	Alternatively, another implementation could instead take transactions submitted directly
+	via RPC to its app side mempool, and could even implement a separate custom mempool for
+	special transactions of this nature.
+*/
+
 type BidProvider interface {
 	GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
 }
@@ -28,6 +40,7 @@ type LocalSigner struct {
 	kb         keyring.Keyring
 	lg         log.Logger
 }
+
 type LocalBidProvider struct {
 	Logger     log.Logger
 	Codec      codec.Codec
