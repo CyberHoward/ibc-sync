@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	abci2 "github.com/fatal-fruit/cosmapp/abci"
+	"github.com/fatal-fruit/cosmapp/provider"
 	"io"
 	"os"
 	"path/filepath"
@@ -167,20 +169,6 @@ func NewApp(
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
-
-	// Below we could construct and set an application specific mempool and
-	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
-	// already set in the SDK's BaseApp, this shows an example of how to override
-	// them.
-	//
-	// Example:
-	//
-	// bApp := baseapp.NewBaseApp(...)
-	// nonceMempool := mempool.NewSenderNonceMempool()
-	abciPropHandler := ProposalHandler{}
-	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
-	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
-
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
@@ -212,6 +200,43 @@ func NewApp(
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
+
+	app.AccountKeeper = authkeeper.NewAccountKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
+		authtypes.ProtoBaseAccount,
+		maccPerms,
+		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
+		sdk.Bech32MainPrefix,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Below we could construct and set an application specific mempool and
+	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
+	// already set in the SDK's BaseApp, this shows an example of how to override
+	// them.
+	//
+	// Example:
+	//
+	// bApp := baseapp.NewBaseApp(...)
+	// nonceMempool := mempool.NewSenderNonceMempool()
+
+	bp := &provider.LocalBidProvider{
+		Logger: logger,
+		Codec:  app.appCodec,
+		Signer: provider.LocalSigner{
+			KeyName:    "val",
+			KeyringDir: DefaultNodeHome,
+		},
+		TxConfig:   app.txConfig,
+		AcctKeeper: app.AccountKeeper,
+	}
+	if err := bp.Init(); err != nil {
+		panic(err)
+	}
+	abciPropHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
+	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
+	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
