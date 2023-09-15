@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 	abci2 "github.com/fatal-fruit/cosmapp/abci"
 	"github.com/fatal-fruit/cosmapp/provider"
 	"io"
@@ -163,6 +164,17 @@ func NewApp(
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
+
+	mempool := sdkmempool.NewSenderNonceMempool()
+	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
+		app.SetMempool(mempool)
+	})
+
+	voteExtOp := func(bApp *baseapp.BaseApp) {
+		voteExtHandler := abci2.NewVoteExtensionHandler(logger, mempool)
+		bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
+	}
+	baseAppOptions = append(baseAppOptions, voteExtOp)
 
 	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)

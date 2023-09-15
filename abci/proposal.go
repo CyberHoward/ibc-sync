@@ -19,6 +19,7 @@ type ProposalHandler struct {
 func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		var proposalTxs [][]byte
+		h.Logger.Info(fmt.Sprintf("Proposing transactions at height : %v", req.Height))
 
 		for _, txBytes := range req.Txs {
 			txDecoder := h.TxConfig.TxDecoder()
