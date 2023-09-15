@@ -30,6 +30,10 @@ In part 1, we want to build a custom MEV extraction solution in preparePropsoal 
 #### Start Chain
 ```
 make start-localnet
+
+jq '.consensus.params.abci.vote_extensions_enable_height = "2"' ~/.cosmappd/config/genesis.json > output.json && mv output.json ~/.cosmappd/config/genesis.json
+
+./build/cosmappd start
 ```
 
 ## Resources
