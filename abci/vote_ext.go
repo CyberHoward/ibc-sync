@@ -1,6 +1,7 @@
 package abci
 
 import (
+	"context"
 	"cosmossdk.io/log"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 
 type AppVoteExtension struct {
 	Height int64
-	Bids   []nstypes.MsgBid
+	Bids   []*nstypes.MsgBid
 }
 
 type VoteExtHandler struct {
@@ -33,7 +34,25 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		h.currentBlock = req.Height
 		h.logger.Info(fmt.Sprintf("Extending votes at block height : %v", req.Height))
 
-		bids := []nstypes.MsgBid{}
+		bids := []*nstypes.MsgBid{}
+
+		itr := h.mempool.Select(context.Background(), nil)
+		for itr != nil {
+			tmptx := itr.Tx()
+			sdkMsgs := tmptx.GetMsgs()
+
+			for _, msg := range sdkMsgs {
+				switch msg := msg.(type) {
+				case *nstypes.MsgBid:
+					// Get matching bid from matching engine
+					//encTx, err := h.TxConfig.TxEncoder()(newTx)
+					bids = append(bids, msg)
+				default:
+				}
+			}
+			h.mempool.Remove(tmptx)
+			itr = itr.Next()
+		}
 
 		voteExt := AppVoteExtension{
 			Height: req.Height,
