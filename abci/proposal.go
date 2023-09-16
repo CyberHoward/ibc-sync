@@ -100,9 +100,17 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		return &abci.ResponsePrepareProposal{Txs: proposalTxs}, nil
 	}
 }
+
+type VE struct {
+	Bid    string
+	Signer []byte
+}
+
 func (h *ProcessProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (resp *abci.ResponseProcessProposal, err error) {
+		//reqCount := map[string]int{}
 
+		bdCnt := map[string]int{}
 		h.Logger.Info(fmt.Sprintf("Processing Proposal for height : %v", req.Height))
 		var votes InjectedVotes
 		if err := json.Unmarshal(req.Txs[0], &votes); err != nil {
@@ -111,11 +119,16 @@ func (h *ProcessProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHan
 
 		for i, v := range votes.Votes {
 			h.Logger.Info(fmt.Sprintf("Signer for Vote Extension %v: %v", i, v.VoteExtSigner))
-			//for j, b := range v.Bids {
-			//	h.Logger.Info(fmt.Sprintf("Bid for Vote Extension %i: %v", i, v.VoteExtSigner))
-			//
-			//}
+			for j, b := range v.Bids {
+				h.Logger.Info(fmt.Sprintf("Bid for Vote Extension %i: %v", j, b.String()))
+				k := b.Name + b.Owner + b.ResolveAddress
+				bdCnt[k] += 1
+			}
 		}
+
+		//for k, v := range bdCnt {
+		//	h.Logger.Info(fmt.Sprintf())
+		//}
 
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}

@@ -36,6 +36,13 @@ jq '.consensus.params.abci.vote_extensions_enable_height = "2"' ~/.cosmappd/conf
 ./build/cosmappd start
 ```
 
+With Docker
+```
+docker build -t cosmapp .
+
+
+```
+
 ## Resources
 
 Official Docs
