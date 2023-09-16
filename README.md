@@ -27,7 +27,7 @@ In part 1, we want to build a custom MEV extraction solution in preparePropsoal 
 
 ## Developing
 
-#### Start Chain
+#### Start A Single Chain
 ```
 make start-localnet
 
@@ -36,12 +36,26 @@ jq '.consensus.params.abci.vote_extensions_enable_height = "2"' ~/.cosmappd/conf
 ./build/cosmappd start
 ```
 
-With Docker
+#### Start a 3 Validator Network
+```shell
+./scripts/configure.sh
 ```
-docker build -t cosmapp .
 
+Read Logs
+```shell
+
+tail -f $HOME/cosmos/nodes/beacon/logs
+tail -f $HOME/cosmos/nodes/val1/logs
+tail -f $HOME/cosmos/nodes/val1/logs
 
 ```
+
+Query a node
+```shell
+source ./scripts/vars.sh
+$BINARY q bank balances $($BINARY keys show alice -a --home $HOME/cosmos/nodes/beacon --keyring-backend test) --home $HOME/cosmos/nodes/beacon --node "tcp://127.0.0.1:29170"
+```
+
 
 ## Resources
 
