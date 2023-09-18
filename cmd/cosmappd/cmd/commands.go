@@ -31,6 +31,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	FlagValKey = "val-key"
+)
+
 func initTendermintConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
 
@@ -76,10 +80,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig, basi
 		txCommand(),
 		keys.Commands(),
 	)
+
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	startCmd.Flags().String(FlagValKey, "", "Name of Validator Key to Sign Txs")
 }
 
 func genesisCommand(encodingConfig app.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
@@ -146,9 +152,19 @@ func newApp(
 ) servertypes.Application {
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
+	//homePath, ok := appOpts.Get(flags.FlagHome).(string)
+	//if !ok {
+	//	homePath = app.DefaultNodeHome
+	//}
+
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
+	}
+
+	valKey, ok := appOpts.Get(FlagValKey).(string)
+	if !ok {
+		valKey = "val"
 	}
 
 	return app.NewApp(
@@ -157,7 +173,7 @@ func newApp(
 		traceStore,
 		true,
 		skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
+		valKey,
 		appOpts,
 		baseappOptions...,
 	)
@@ -174,6 +190,11 @@ func appExport(
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	var exportApp *app.App
+
+	valKey, ok := appOpts.Get(FlagValKey).(string)
+	if !ok {
+		return servertypes.ExportedApp{}, errors.New("validator key not set")
+	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
@@ -198,7 +219,7 @@ func appExport(
 		traceStore,
 		loadLatest,
 		map[int64]bool{},
-		homePath,
+		valKey,
 		appOpts,
 	)
 

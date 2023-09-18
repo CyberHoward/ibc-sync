@@ -12,19 +12,6 @@ import (
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
-type AppVoteExtension struct {
-	Height int64
-	//Bids   []*nstypes.MsgBid
-	Message string
-}
-
-type VoteExtHandler struct {
-	logger       log.Logger
-	currentBlock int64
-	mempool      sdkmempool.Mempool
-	cdc          codec.Codec
-}
-
 func NewVoteExtensionHandler(lg log.Logger, mp sdkmempool.Mempool, cdc codec.Codec) *VoteExtHandler {
 	return &VoteExtHandler{
 		logger:  lg,
@@ -39,7 +26,7 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		h.logger.Info(fmt.Sprintf("Extending votes at block height : %v", req.Height))
 
 		bids := []*nstypes.MsgBid{}
-
+		bidsBz := [][]byte{}
 		itr := h.mempool.Select(context.Background(), nil)
 		for itr != nil {
 			tmptx := itr.Tx()
@@ -50,6 +37,12 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				case *nstypes.MsgBid:
 					//encTx, err := h.TxConfig.TxEncoder()(newTx)
 					bids = append(bids, msg)
+					bz, err := h.cdc.Marshal(msg)
+					if err != nil {
+						h.logger.Error(fmt.Sprintf("Error marshalling VE Bid : %w", err))
+						break
+					}
+					bidsBz = append(bidsBz, bz)
 				default:
 				}
 			}
@@ -57,14 +50,14 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			itr = itr.Next()
 		}
 
-		//voteExt := AppVoteExtension{
-		//	Height: req.Height,
-		//	Bids:   bids,
-		//}
 		voteExt := AppVoteExtension{
-			Height:  req.Height,
-			Message: "Hello World",
+			Height: req.Height,
+			Bids:   bidsBz,
 		}
+		//voteExt := AppVoteExtension{
+		//	Height:  req.Height,
+		//	Message: "Hello World",
+		//}
 
 		bz, err := json.Marshal(voteExt)
 		//bz, err := h.cdc.MarshalJSON(voteExt)

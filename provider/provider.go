@@ -54,8 +54,14 @@ func (bp *LocalBidProvider) Init() error {
 }
 
 func (ls *LocalSigner) Init(txCfg client.TxConfig, cdc codec.Codec, logger log.Logger) error {
-	if len(ls.KeyName) == 0 || len(ls.KeyringDir) == 0 {
-		return fmt.Errorf("keyName and keyringDir must be set")
+
+	if len(ls.KeyName) == 0 {
+		return fmt.Errorf("keyName  must be set")
+	}
+
+	if len(ls.KeyringDir) == 0 {
+		return fmt.Errorf("keyDir  must be set")
+
 	}
 
 	ls.txConfig = txCfg
@@ -72,6 +78,8 @@ func (ls *LocalSigner) Init(txCfg client.TxConfig, cdc codec.Codec, logger log.L
 
 func (ls *LocalSigner) RetreiveSigner(ctx sdk.Context, actKeeper authkeeper.AccountKeeper) (types.AccountI, error) {
 	lg := ls.lg
+
+	lg.Info(fmt.Sprintf("Keyring Dir: %v", ls.KeyringDir))
 	addrBz, err := ls.kb.LookupAddressByKeyName(ls.KeyName)
 
 	if err != nil {
@@ -127,10 +135,12 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 
 func (b *LocalBidProvider) GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx {
 	acct, err := b.Signer.RetreiveSigner(ctx, b.AcctKeeper)
+	b.Logger.Info("Retrieved Signer")
 	if err != nil {
 		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
 		return nil
 	}
+	b.Logger.Info("Created new bid")
 
 	msg := nstypes.MsgBid{
 		Name:           bid.Name,

@@ -5,13 +5,10 @@ import (
 
 	"cosmossdk.io/log"
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/spf13/cast"
-
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 
 	"github.com/fatal-fruit/cosmapp/app"
@@ -25,13 +22,17 @@ import (
 )
 
 func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
+
+	//homeD := cast.ToString(simtestutil.NewAppOptionsWithFlagHome(flags.FlagHome))
+	//fmt.Println(fmt.Sprintf("This is the home %v", homeD))
+
 	tmpApp := app.NewApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
 		nil,
 		true,
 		map[int64]bool{},
-		cast.ToString(simtestutil.NewAppOptionsWithFlagHome(flags.FlagHome)),
+		"val",
 		simtestutil.NewAppOptionsWithFlagHome(tempDir()),
 	)
 

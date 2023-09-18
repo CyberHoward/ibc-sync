@@ -33,6 +33,8 @@ do
     sleep 1
 
     # Create account keypair
+#    echo "Adding key to ${NODE_DIR}"
+#    echo ${KEY}
     $BINARY keys add $KEY --home ${NODE_DIR} --keyring-backend test --output json > ${NODE_DIR}/${KEY}.json 2>&1
     sleep 1
 
@@ -167,6 +169,7 @@ do
     # Start nodes
     $BINARY start \
         --home ${NODE_DIR} \
+        --val-key ${KEY} \
         --p2p.persistent_peers ${PERSISTENT_PEERS} \
         --rpc.laddr tcp://${NODE_IP}:${RPC_LADDR_PORT} \
         --grpc.address ${NODE_IP}:${GRPC_LADDR_PORT} \

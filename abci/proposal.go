@@ -5,58 +5,53 @@ import (
 	"encoding/json"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/fatal-fruit/cosmapp/provider"
 	nstypes "github.com/fatal-fruit/ns/types"
 )
-
-type ProposalHandler struct {
-	TxConfig    client.TxConfig
-	Logger      log.Logger
-	BidProvider provider.BidProvider
-}
-
-type ProcessProposalHandler struct {
-	TxConfig client.TxConfig
-	Logger   log.Logger
-}
-
-//type InjectedVoteExt struct {
-//	VoteExtSigner []byte
-//	Bids          []*nstypes.MsgBid
-//}
-
-type InjectedVoteExt struct {
-	Signer  string
-	Message string
-}
-
-type InjectedVotes struct {
-	Votes []InjectedVoteExt
-}
 
 func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		var proposalTxs [][]byte
 
+		h.Logger.Info(fmt.Sprintf("This is the val key :: %v", h.Keyname))
+
 		if req.Height > 1 {
 			voteExt, err := processVoteExtensions(req, h.Logger)
 			if err != nil {
-				h.Logger.Error(fmt.Sprintf("Unable to process Vote Extensions: %w", err))
+				h.Logger.Error(fmt.Sprintf("❌~Unable to process Vote Extensions: %w", err))
 			} else if voteExt != nil {
 				var testVts InjectedVotes
 				err = json.Unmarshal(voteExt, &testVts)
 				h.Logger.Info(fmt.Sprintf("🛠️~These are the injected Vote Extensions: %v", testVts.Votes))
-				proposalTxs = append(proposalTxs, voteExt)
+				for i, v := range testVts.Votes {
+					//var bds []*nstypes.MsgBid
+					h.Logger.Info(fmt.Sprintf("🛠️~This is Vote %v", i))
+					if (v.Bids != nil) && (len(v.Bids) > 0) {
+						for j, b := range v.Bids {
+							var bd nstypes.MsgBid
+							h.Logger.Info(fmt.Sprintf("🛠️~Bids are in VE: %v", b))
+							err := h.Codec.Unmarshal(b, &bd)
+							if err != nil {
+								h.Logger.Error(fmt.Sprintf("❌️~Error unmarshalling vote extension %v ::  %w", j, err))
+							} else {
+								h.Logger.Info(fmt.Sprintf("🛠️~ Bid number %v :: %v", j, bd.String()))
+							}
+						}
+					}
+					h.Logger.Info("Found valid vote extensions, appending to Proposal")
+					proposalTxs = append(proposalTxs, voteExt)
+				}
 			}
+			h.Logger.Info("Fineshed iterating through Votes")
 		}
+
+		h.Logger.Info("Building Proposal")
 
 		for _, txBytes := range req.Txs {
 			txDecoder := h.TxConfig.TxDecoder()
 			messages, err := txDecoder(txBytes)
 			if err != nil {
-				h.Logger.Error("Error Decoding txBytes")
+				h.Logger.Error("❌~Error Decoding txBytes")
 				return &abci.ResponsePrepareProposal{Txs: req.Txs}, err
 			}
 			sdkMsgs := messages.GetMsgs()
@@ -65,12 +60,14 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 			for _, msg := range sdkMsgs {
 				switch msg := msg.(type) {
 				case *nstypes.MsgBid:
+					h.Logger.Info("Found a Bid to Snipe")
+
 					// Get matching bid from matching engine
 					newTx := h.BidProvider.GetMatchingBid(ctx, msg)
 					// Encode transaction to add to block proposal
 					encTx, err := h.TxConfig.TxEncoder()(newTx)
 					if err != nil {
-						h.Logger.Info(fmt.Sprintf("Error sniping bid: %v", err.Error()))
+						h.Logger.Info(fmt.Sprintf("❌~Error sniping bid: %v", err.Error()))
 					}
 
 					updatedTx = encTx
@@ -79,6 +76,7 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 
 			}
 			if updatedTx != nil {
+				h.Logger.Info("Appended New Tx")
 				proposalTxs = append(proposalTxs, updatedTx)
 			} else {
 				proposalTxs = append(proposalTxs, txBytes)
@@ -101,7 +99,7 @@ func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposal
 
 		if len(req.Txs) >= 1 {
 			if err := json.Unmarshal(req.Txs[0], &votes); err != nil {
-				h.Logger.Error(fmt.Sprintf("⚙️~Error Unmarshalling Vote Extensions : %w", err))
+				h.Logger.Error(fmt.Sprintf("❌~Error Unmarshalling Vote Extensions : %w", err))
 
 				return &abci.ResponseProcessProposal{abci.ResponseProcessProposal_REJECT}, err
 			}
@@ -143,7 +141,8 @@ func processVoteExtensions(req *abci.RequestPrepareProposal, log log.Logger) ([]
 			bz := v.VoteExtension
 			err := json.Unmarshal(bz, &veb)
 			if err != nil {
-				log.Info(fmt.Sprintf("Error unmarhsalling VE tx: %w", err))
+				// TODO: Fix
+				log.Info(fmt.Sprintf("❌~Error unmarhsalling VE tx: %w", err))
 			}
 
 			log.Info(fmt.Sprintf("🗳️~Vote extensions %v at height %v for validator :: %v", i, veb.Height, val))
@@ -152,21 +151,21 @@ func processVoteExtensions(req *abci.RequestPrepareProposal, log log.Logger) ([]
 			//	log.Info(fmt.Sprintf("🗳️~Bid %v of vote extension: %v", j, b.String()))
 			//}
 
-			//inj := InjectedVoteExt{
-			//	VoteExtSigner: v.ExtensionSignature,
-			//	Bids:          veb.Bids,
-			//}
-
 			inj := InjectedVoteExt{
-				Signer:  val,
-				Message: veb.Message,
+				VoteExtSigner: v.ExtensionSignature,
+				Bids:          veb.Bids,
 			}
+
+			//inj := InjectedVoteExt{
+			//	Signer:  val,
+			//	Message: veb.Message,
+			//}
 			injV.Votes = append(injV.Votes, inj)
 		}
 
 		injectedBz, err := json.Marshal(injV)
 		if err != nil {
-			log.Info(fmt.Sprintf("Error marhsalling VE tx: %w", err))
+			log.Info(fmt.Sprintf("❌~Error marhsalling VE tx: %w", err))
 		}
 
 		return injectedBz, nil

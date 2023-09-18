@@ -1,19 +1,20 @@
 package app
 
 import (
-	"encoding/json"
-	"fmt"
-	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
-	abci2 "github.com/fatal-fruit/cosmapp/abci"
-	"github.com/fatal-fruit/cosmapp/provider"
-	"io"
-	"os"
-	"path/filepath"
-
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"encoding/json"
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
+	abci2 "github.com/fatal-fruit/cosmapp/abci"
+	"github.com/fatal-fruit/cosmapp/provider"
+	"github.com/spf13/cast"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/std"
@@ -143,10 +144,12 @@ func NewApp(
 	traceStore io.Writer,
 	loadLatest bool,
 	skipUpgradeHeights map[int64]bool,
-	homePath string,
+	valKeyName string,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+	//fmt.Println(fmt.Sprintf("This is the home path %v", homePath))
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -237,8 +240,8 @@ func NewApp(
 		Logger: logger,
 		Codec:  app.appCodec,
 		Signer: provider.LocalSigner{
-			KeyName:    "val",
-			KeyringDir: DefaultNodeHome,
+			KeyName:    valKeyName,
+			KeyringDir: homePath,
 		},
 		TxConfig:   app.txConfig,
 		AcctKeeper: app.AccountKeeper,
@@ -246,7 +249,7 @@ func NewApp(
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
+	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, valKeyName}
 	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, logger}
 	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
 	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())
