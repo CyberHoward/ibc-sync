@@ -46,7 +46,10 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				default:
 				}
 			}
-			h.mempool.Remove(tmptx)
+			err := h.mempool.Remove(tmptx)
+			if err != nil {
+				h.logger.Info(fmt.Sprintf("Unable to remove tx from mempool: %w", err))
+			}
 			itr = itr.Next()
 		}
 

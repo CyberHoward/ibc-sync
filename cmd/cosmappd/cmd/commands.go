@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/fatal-fruit/cosmapp/types"
 	"io"
 	"os"
 
@@ -29,10 +30,6 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	FlagValKey = "val-key"
 )
 
 func initTendermintConfig() *tmcfg.Config {
@@ -85,7 +82,8 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig, basi
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
-	startCmd.Flags().String(FlagValKey, "", "Name of Validator Key to Sign Txs")
+	startCmd.Flags().String(types.FlagValKey, "", "Name of Validator Key to Sign Txs")
+	startCmd.Flags().String(types.FlagRunProvider, "false", "Run the transaction provider logic")
 }
 
 func genesisCommand(encodingConfig app.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
@@ -152,17 +150,12 @@ func newApp(
 ) servertypes.Application {
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
-	//homePath, ok := appOpts.Get(flags.FlagHome).(string)
-	//if !ok {
-	//	homePath = app.DefaultNodeHome
-	//}
-
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
 	}
 
-	valKey, ok := appOpts.Get(FlagValKey).(string)
+	valKey, ok := appOpts.Get(types.FlagValKey).(string)
 	if !ok {
 		valKey = "val"
 	}
@@ -191,7 +184,7 @@ func appExport(
 ) (servertypes.ExportedApp, error) {
 	var exportApp *app.App
 
-	valKey, ok := appOpts.Get(FlagValKey).(string)
+	valKey, ok := appOpts.Get(types.FlagValKey).(string)
 	if !ok {
 		return servertypes.ExportedApp{}, errors.New("validator key not set")
 	}

@@ -76,6 +76,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	apptypes "github.com/fatal-fruit/cosmapp/types"
 	nskeeper "github.com/fatal-fruit/ns/keeper"
 	nameservice "github.com/fatal-fruit/ns/module"
 	nstypes "github.com/fatal-fruit/ns/types"
@@ -149,6 +150,7 @@ func NewApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+	runProvider := cast.ToBool(appOpts.Get(apptypes.FlagRunProvider))
 	//fmt.Println(fmt.Sprintf("This is the home path %v", homePath))
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
@@ -249,7 +251,7 @@ func NewApp(
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, valKeyName}
+	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, valKeyName, runProvider}
 	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, logger}
 	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
 	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())

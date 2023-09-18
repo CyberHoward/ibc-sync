@@ -22,10 +22,6 @@ import (
 )
 
 func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
-
-	//homeD := cast.ToString(simtestutil.NewAppOptionsWithFlagHome(flags.FlagHome))
-	//fmt.Println(fmt.Sprintf("This is the home %v", homeD))
-
 	tmpApp := app.NewApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),

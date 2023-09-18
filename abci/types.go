@@ -14,6 +14,7 @@ type ProposalHandler struct {
 	BidProvider provider.BidProvider
 	Codec       codec.Codec
 	Keyname     string
+	RunProvider bool
 }
 
 type ProcessProposalHandler struct {

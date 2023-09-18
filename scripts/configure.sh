@@ -164,12 +164,16 @@ do
     GRPC_LADDR_PORT=$(($GRPC_LADDR_BASEPORT + $index))
     NODE_ADDRESS_PORT=$(($NODE_ADDRESS_BASEPORT + $index))
 
-
+    RUN_PROV=false
+    if [ $MONIKER == $BEACON_MONIKER ]; then
+      RUN_PROV=true
+    fi
 
     # Start nodes
     $BINARY start \
         --home ${NODE_DIR} \
         --val-key ${KEY} \
+        --run-provider ${RUN_PROV} \
         --p2p.persistent_peers ${PERSISTENT_PEERS} \
         --rpc.laddr tcp://${NODE_IP}:${RPC_LADDR_PORT} \
         --grpc.address ${NODE_IP}:${GRPC_LADDR_PORT} \

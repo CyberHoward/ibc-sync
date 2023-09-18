@@ -14,12 +14,15 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		var proposalTxs [][]byte
 
 		h.Logger.Info(fmt.Sprintf("This is the val key :: %v", h.Keyname))
+		h.Logger.Info(fmt.Sprintf("This is the number of transactions :: %v", len(req.Txs)))
 
-		if req.Height > 1 {
+		// Start checking VE at H+1 (3)
+		if req.Height > 2 {
+			// Process VE
 			voteExt, err := processVoteExtensions(req, h.Logger)
 			if err != nil {
 				h.Logger.Error(fmt.Sprintf("❌~Unable to process Vote Extensions: %w", err))
-			} else if voteExt != nil {
+			} else if len(voteExt) > 0 {
 				var testVts InjectedVotes
 				err = json.Unmarshal(voteExt, &testVts)
 				h.Logger.Info(fmt.Sprintf("🛠️~These are the injected Vote Extensions: %v", testVts.Votes))
@@ -37,52 +40,59 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 								h.Logger.Info(fmt.Sprintf("🛠️~ Bid number %v :: %v", j, bd.String()))
 							}
 						}
+
 					}
-					h.Logger.Info("Found valid vote extensions, appending to Proposal")
-					proposalTxs = append(proposalTxs, voteExt)
+
 				}
+				h.Logger.Info("Found valid vote extensions, appending to Proposal")
+				proposalTxs = append(proposalTxs, voteExt)
 			}
 			h.Logger.Info("Fineshed iterating through Votes")
 		}
 
 		h.Logger.Info("Building Proposal")
 
-		for _, txBytes := range req.Txs {
-			txDecoder := h.TxConfig.TxDecoder()
-			messages, err := txDecoder(txBytes)
-			if err != nil {
-				h.Logger.Error("❌~Error Decoding txBytes")
-				return &abci.ResponsePrepareProposal{Txs: req.Txs}, err
-			}
-			sdkMsgs := messages.GetMsgs()
+		if h.RunProvider {
+			h.Logger.Info(fmt.Sprintf("This is the value of the provider: %v", h.RunProvider))
+			for _, txBytes := range req.Txs {
+				txDecoder := h.TxConfig.TxDecoder()
+				messages, err := txDecoder(txBytes)
+				if err != nil {
+					h.Logger.Error("❌~Error Decoding txBytes")
+					return &abci.ResponsePrepareProposal{Txs: req.Txs}, err
+				}
+				sdkMsgs := messages.GetMsgs()
 
-			var updatedTx []byte
-			for _, msg := range sdkMsgs {
-				switch msg := msg.(type) {
-				case *nstypes.MsgBid:
-					h.Logger.Info("Found a Bid to Snipe")
+				var updatedTx []byte
+				for _, msg := range sdkMsgs {
+					switch msg := msg.(type) {
+					case *nstypes.MsgBid:
+						h.Logger.Info("Found a Bid to Snipe")
 
-					// Get matching bid from matching engine
-					newTx := h.BidProvider.GetMatchingBid(ctx, msg)
-					// Encode transaction to add to block proposal
-					encTx, err := h.TxConfig.TxEncoder()(newTx)
-					if err != nil {
-						h.Logger.Info(fmt.Sprintf("❌~Error sniping bid: %v", err.Error()))
+						// Get matching bid from matching engine
+						newTx := h.BidProvider.GetMatchingBid(ctx, msg)
+						// Encode transaction to add to block proposal
+						encTx, err := h.TxConfig.TxEncoder()(newTx)
+						if err != nil {
+							h.Logger.Info(fmt.Sprintf("❌~Error sniping bid: %v", err.Error()))
+						}
+
+						updatedTx = encTx
+					default:
 					}
 
-					updatedTx = encTx
-				default:
 				}
-
+				if updatedTx != nil {
+					h.Logger.Info("Appended New Tx")
+					proposalTxs = append(proposalTxs, updatedTx)
+				} else {
+					proposalTxs = append(proposalTxs, txBytes)
+				}
 			}
-			if updatedTx != nil {
-				h.Logger.Info("Appended New Tx")
-				proposalTxs = append(proposalTxs, updatedTx)
-			} else {
-				proposalTxs = append(proposalTxs, txBytes)
-			}
+			return &abci.ResponsePrepareProposal{Txs: proposalTxs}, nil
 		}
-		return &abci.ResponsePrepareProposal{Txs: proposalTxs}, nil
+
+		return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
 	}
 }
 
@@ -124,21 +134,26 @@ func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposal
 
 func processVoteExtensions(req *abci.RequestPrepareProposal, log log.Logger) ([]byte, error) {
 	proposer := sdk.ConsAddress(req.ProposerAddress).String()
-
+	//emptyVE := make([]byte, 0)
 	log.Info("**************************************************************")
 	log.Info(fmt.Sprintf("🛠️~This Validator %v is proposing transactions at height : %v", proposer, req.Height))
 	log.Info("**************************************************************")
+	injV := InjectedVotes{
+		[]InjectedVoteExt{},
+	}
 
-	if req.Height >= 2 {
-		injV := InjectedVotes{}
+	// Don't really need to do this check bc it will only be called at H+1
+	if req.Height > 2 {
 
 		ve := req.GetLocalLastCommit()
+		// Number of votes ~= number of validators
 		votes := ve.GetVotes()
 		for i, v := range votes {
 
 			val := (sdk.ConsAddress)(v.Validator.GetAddress()).String()
 			var veb AppVoteExtension
 			bz := v.VoteExtension
+			log.Info(fmt.Sprintf("Length of VE: %v", len(bz)))
 			err := json.Unmarshal(bz, &veb)
 			if err != nil {
 				// TODO: Fix
@@ -163,12 +178,17 @@ func processVoteExtensions(req *abci.RequestPrepareProposal, log log.Logger) ([]
 			injV.Votes = append(injV.Votes, inj)
 		}
 
-		injectedBz, err := json.Marshal(injV)
-		if err != nil {
-			log.Info(fmt.Sprintf("❌~Error marhsalling VE tx: %w", err))
-		}
-
-		return injectedBz, nil
 	}
-	return nil, nil
+	injectedBz, err := json.Marshal(injV)
+	if err != nil {
+		log.Info(fmt.Sprintf("❌~Error marhsalling VE tx: %w", err))
+	}
+
+	return injectedBz, nil
+	//emt, err := json.Marshal(emptyVE)
+	//if err != nil {
+	//	log.Error(fmt.Sprintf("❌~Error marshalling empty VE: %w", err))
+	//}
+	//// return empty bz
+	//return emt, nil
 }
