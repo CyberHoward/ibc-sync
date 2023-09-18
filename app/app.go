@@ -171,7 +171,7 @@ func NewApp(
 	})
 
 	voteExtOp := func(bApp *baseapp.BaseApp) {
-		voteExtHandler := abci2.NewVoteExtensionHandler(logger, mempool)
+		voteExtHandler := abci2.NewVoteExtensionHandler(logger, mempool, appCodec)
 		bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
 	}
 	baseAppOptions = append(baseAppOptions, voteExtOp)
@@ -246,9 +246,10 @@ func NewApp(
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	abciPropHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
-	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
-	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
+	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
+	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, logger}
+	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
+	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 

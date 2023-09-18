@@ -11,6 +11,9 @@ export STAKE="100000000uatom"
 # Node IP address
 export NODE_IP="127.0.0.1"
 
+export ALICE="alice"
+export BARBARA="barbara"
+export CINDY="cindy"
 
 # Home directory
 export HOME_DIR=$HOME

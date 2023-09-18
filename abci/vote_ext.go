@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
 	nstypes "github.com/fatal-fruit/ns/types"
@@ -13,19 +14,22 @@ import (
 
 type AppVoteExtension struct {
 	Height int64
-	Bids   []*nstypes.MsgBid
+	//Bids   []*nstypes.MsgBid
+	Message string
 }
 
 type VoteExtHandler struct {
 	logger       log.Logger
 	currentBlock int64
 	mempool      sdkmempool.Mempool
+	cdc          codec.Codec
 }
 
-func NewVoteExtensionHandler(lg log.Logger, mp sdkmempool.Mempool) *VoteExtHandler {
+func NewVoteExtensionHandler(lg log.Logger, mp sdkmempool.Mempool, cdc codec.Codec) *VoteExtHandler {
 	return &VoteExtHandler{
 		logger:  lg,
 		mempool: mp,
+		cdc:     cdc,
 	}
 }
 
@@ -44,7 +48,6 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			for _, msg := range sdkMsgs {
 				switch msg := msg.(type) {
 				case *nstypes.MsgBid:
-					// Get matching bid from matching engine
 					//encTx, err := h.TxConfig.TxEncoder()(newTx)
 					bids = append(bids, msg)
 				default:
@@ -54,12 +57,17 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			itr = itr.Next()
 		}
 
+		//voteExt := AppVoteExtension{
+		//	Height: req.Height,
+		//	Bids:   bids,
+		//}
 		voteExt := AppVoteExtension{
-			Height: req.Height,
-			Bids:   bids,
+			Height:  req.Height,
+			Message: "Hello World",
 		}
 
 		bz, err := json.Marshal(voteExt)
+		//bz, err := h.cdc.MarshalJSON(voteExt)
 		if err != nil {
 			return nil, fmt.Errorf("Error marshalling VE: %w", err)
 		}
