@@ -252,7 +252,7 @@ func NewApp(
 		panic(err)
 	}
 	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, valKeyName, runProvider}
-	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, logger}
+	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, appCodec, logger}
 	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
 	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())
 

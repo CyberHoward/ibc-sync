@@ -19,6 +19,7 @@ type ProposalHandler struct {
 
 type ProcessProposalHandler struct {
 	TxConfig client.TxConfig
+	Codec    codec.Codec
 	Logger   log.Logger
 }
 
@@ -29,21 +30,11 @@ type VoteExtHandler struct {
 	cdc          codec.Codec
 }
 
-//	type InjectedVoteExt struct {
-//		VoteExtSigner []byte
-//		Bids          []*nstypes.MsgBid
-//	}
 type InjectedVoteExt struct {
 	VoteExtSigner []byte
 	Bids          [][]byte
 }
 
-//type InjectedVoteExt struct {
-//	Signer  string
-//	Message string
-//}
-
-// TODO: Special Transaction
 type InjectedVotes struct {
 	Votes []InjectedVoteExt
 }
@@ -51,5 +42,4 @@ type InjectedVotes struct {
 type AppVoteExtension struct {
 	Height int64
 	Bids   [][]byte
-	//Message string
 }

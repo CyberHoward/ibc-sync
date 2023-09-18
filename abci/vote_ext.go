@@ -22,48 +22,48 @@ func NewVoteExtensionHandler(lg log.Logger, mp sdkmempool.Mempool, cdc codec.Cod
 
 func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-		h.currentBlock = req.Height
 		h.logger.Info(fmt.Sprintf("Extending votes at block height : %v", req.Height))
 
-		bids := []*nstypes.MsgBid{}
-		bidsBz := [][]byte{}
+		voteExtBids := [][]byte{}
+
+		// Get mempool txs
 		itr := h.mempool.Select(context.Background(), nil)
 		for itr != nil {
 			tmptx := itr.Tx()
 			sdkMsgs := tmptx.GetMsgs()
 
+			// Iterate through msgs, check for any bids
 			for _, msg := range sdkMsgs {
 				switch msg := msg.(type) {
 				case *nstypes.MsgBid:
-					//encTx, err := h.TxConfig.TxEncoder()(newTx)
-					bids = append(bids, msg)
+					// Marshal sdk bids to []byte
 					bz, err := h.cdc.Marshal(msg)
 					if err != nil {
 						h.logger.Error(fmt.Sprintf("Error marshalling VE Bid : %w", err))
 						break
 					}
-					bidsBz = append(bidsBz, bz)
+					voteExtBids = append(voteExtBids, bz)
 				default:
 				}
 			}
+
+			// Remove tx from app side mempool
 			err := h.mempool.Remove(tmptx)
 			if err != nil {
 				h.logger.Info(fmt.Sprintf("Unable to remove tx from mempool: %w", err))
 			}
+
 			itr = itr.Next()
 		}
 
+		// Create vote extension
 		voteExt := AppVoteExtension{
 			Height: req.Height,
-			Bids:   bidsBz,
+			Bids:   voteExtBids,
 		}
-		//voteExt := AppVoteExtension{
-		//	Height:  req.Height,
-		//	Message: "Hello World",
-		//}
 
+		// Marshal Vote Extension
 		bz, err := json.Marshal(voteExt)
-		//bz, err := h.cdc.MarshalJSON(voteExt)
 		if err != nil {
 			return nil, fmt.Errorf("Error marshalling VE: %w", err)
 		}
