@@ -1,4 +1,4 @@
-package app
+package testutils
 
 import (
 	"cosmossdk.io/x/tx/signing"

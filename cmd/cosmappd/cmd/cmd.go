@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/fatal-fruit/cosmapp/testutils"
 	"os"
 
 	"cosmossdk.io/log"
@@ -21,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
+func NewRootCmd() (*cobra.Command, testutils.EncodingConfig) {
 	tmpApp := app.NewApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
@@ -32,7 +33,7 @@ func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
 		simtestutil.NewAppOptionsWithFlagHome(tempDir()),
 	)
 
-	encodingConfig := app.EncodingConfig{
+	encodingConfig := testutils.EncodingConfig{
 		InterfaceRegistry: tmpApp.InterfaceRegistry(),
 		Marshaler:         tmpApp.AppCodec(),
 		TxConfig:          tmpApp.GetTxConfig(),

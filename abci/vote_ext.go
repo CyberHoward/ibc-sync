@@ -43,7 +43,7 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 					// Marshal sdk bids to []byte
 					bz, err := h.cdc.Marshal(msg)
 					if err != nil {
-						h.logger.Error(fmt.Sprintf("Error marshalling VE Bid : %w", err))
+						h.logger.Error(fmt.Sprintf("Error marshalling VE Bid : %v", err))
 						break
 					}
 					voteExtBids = append(voteExtBids, bz)
@@ -57,7 +57,7 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			//// Remove tx from app side mempool
 			//err = h.mempool.Remove(tmptx)
 			if err != nil {
-				h.logger.Info(fmt.Sprintf("Unable to update mempool tx: %w", err))
+				h.logger.Info(fmt.Sprintf("Unable to update mempool tx: %v", err))
 			}
 
 			itr = itr.Next()

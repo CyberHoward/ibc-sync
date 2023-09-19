@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/fatal-fruit/cosmapp/testutils"
 	"github.com/fatal-fruit/cosmapp/types"
 	"io"
 	"os"
@@ -56,7 +57,7 @@ func initAppConfig() (string, interface{}) {
 	return defaultAppTemplate, customAppConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig, basicManager module.BasicManager, defaultNodeHome string) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig testutils.EncodingConfig, basicManager module.BasicManager, defaultNodeHome string) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -86,7 +87,7 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 	startCmd.Flags().String(types.FlagRunProvider, "false", "Run the transaction provider logic")
 }
 
-func genesisCommand(encodingConfig app.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
+func genesisCommand(encodingConfig testutils.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.Commands(encodingConfig.TxConfig, basicManager, defaultNodeHome)
 
 	for _, subCmd := range cmds {
