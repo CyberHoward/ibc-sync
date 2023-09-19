@@ -19,7 +19,7 @@ type ThresholdMempool struct {
 
 func NewThresholdMempool(logger log.Logger) *ThresholdMempool {
 	return &ThresholdMempool{
-		logger: logger.With("module", "fee-mempool"),
+		logger: logger.With("module", "threshold-mempool"),
 	}
 }
 

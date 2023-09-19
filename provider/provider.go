@@ -157,5 +157,27 @@ func (b *LocalTxProvider) getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) s
 func (b *LocalTxProvider) BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error) {
 	b.Logger.Info("💨 :: Building Proposal")
 
-	return proposalTxs, nil
+	var newProposal []sdk.Tx
+	for _, tx := range proposalTxs {
+		sdkMsgs := tx.GetMsgs()
+		for _, msg := range sdkMsgs {
+			switch msg := msg.(type) {
+			case *nstypes.MsgBid:
+				b.Logger.Info("💨 :: Found a Bid to Snipe")
+
+				// Get matching bid from matching engine
+				newTx := b.getMatchingBid(ctx, msg)
+
+				// First append sniped Bid
+				newProposal = append(newProposal, newTx)
+				newProposal = append(newProposal, tx)
+			default:
+				// Append all other transactions
+				newProposal = append(newProposal, tx)
+			}
+
+		}
+	}
+
+	return newProposal, nil
 }

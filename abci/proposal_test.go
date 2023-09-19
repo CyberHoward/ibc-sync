@@ -26,6 +26,7 @@ func TestBidHash(t *testing.T) {
 	}
 }
 
+// TODO: Fix me
 func TestValidateProposal(t *testing.T) {
 	testEncConfig := testutils.MakeTestEncodingConfig()
 	testTxConfig := testEncConfig.TxConfig

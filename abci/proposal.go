@@ -53,6 +53,7 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 			}
 			txs = tmpMsgs
 		}
+
 		for _, sdkTxs := range txs {
 			txBytes, err := h.TxConfig.TxEncoder()(sdkTxs)
 			if err != nil {
