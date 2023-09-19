@@ -43,3 +43,8 @@ type AppVoteExtension struct {
 	Height int64
 	Bids   [][]byte
 }
+
+type SpecialTransaction struct {
+	Height int
+	Bids   [][]byte
+}

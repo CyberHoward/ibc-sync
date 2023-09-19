@@ -150,8 +150,9 @@ func NewApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+	// Set demo flag
 	runProvider := cast.ToBool(appOpts.Get(apptypes.FlagRunProvider))
-	//fmt.Println(fmt.Sprintf("This is the home path %v", homePath))
+
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -169,6 +170,12 @@ func NewApp(
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
+
+	/*
+		*************************
+		Configure Appside Mempool
+		*************************
+	*/
 
 	mempool := sdkmempool.NewSenderNonceMempool()
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
@@ -228,15 +235,11 @@ func NewApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Below we could construct and set an application specific mempool and
-	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
-	// already set in the SDK's BaseApp, this shows an example of how to override
-	// them.
-	//
-	// Example:
-	//
-	// bApp := baseapp.NewBaseApp(...)
-	// nonceMempool := mempool.NewSenderNonceMempool()
+	/*
+		*************************
+		Configure ABCI++ Handlers
+		*************************
+	*/
 
 	bp := &provider.LocalBidProvider{
 		Logger: logger,

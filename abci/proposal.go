@@ -9,11 +9,6 @@ import (
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
-type SpecialTransaction struct {
-	Height int
-	Bids   [][]byte
-}
-
 func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		h.Logger.Info(fmt.Sprintf("🛠️ :: Prepare Proposal"))
@@ -53,8 +48,8 @@ func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposal
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (resp *abci.ResponseProcessProposal, err error) {
 		h.Logger.Info(fmt.Sprintf("⚙️ :: Process Proposal"))
 
+		// The first transaction will always be the Special Transaction
 		numTxs := len(req.Txs)
-
 		if numTxs == 1 {
 			h.Logger.Info(fmt.Sprintf("⚙️:: Number of transactions :: %v", numTxs))
 		}
