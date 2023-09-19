@@ -1,6 +1,7 @@
 package abci
 
 import (
+	"context"
 	"cosmossdk.io/log"
 	"encoding/json"
 	"fmt"
@@ -33,12 +34,32 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 			proposalTxs = append(proposalTxs, bz)
 		}
 
-		// Add Txs to Proposal
-		for _, txBytes := range req.Txs {
-			proposalTxs = append(proposalTxs, txBytes)
+		var txs []sdk.Tx
+		itr := h.Mempool.Select(context.Background(), nil)
+		for itr != nil {
+			tmptx := itr.Tx()
 
-			// Artificially delay Bids -> only pull from mempool if Tx has been seen in VE
+			txs = append(txs, tmptx)
+			itr = itr.Next()
 		}
+		h.Logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions available from mempool: %v", len(txs)))
+
+		for _, sdkTxs := range txs {
+			txBytes, err := h.TxConfig.TxEncoder()(sdkTxs)
+			if err != nil {
+				h.Logger.Info(fmt.Sprintf("❌~Error encoding transaction: %w", err.Error()))
+			}
+			proposalTxs = append(proposalTxs, txBytes)
+		}
+
+		h.Logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions in proposal: %v", len(proposalTxs)))
+
+		// Add Txs to Proposal
+		//for _, txBytes := range req.Txs {
+		//	proposalTxs = append(proposalTxs, txBytes)
+		//
+		//	// Artificially delay Bids -> only pull from mempool if Tx has been seen in VE
+		//}
 
 		return &abci.ResponsePrepareProposal{Txs: proposalTxs}, nil
 	}

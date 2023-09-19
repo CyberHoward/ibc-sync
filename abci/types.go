@@ -4,7 +4,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
+	"github.com/fatal-fruit/cosmapp/mempool"
 	"github.com/fatal-fruit/cosmapp/provider"
 )
 
@@ -13,6 +13,7 @@ type ProposalHandler struct {
 	Logger      log.Logger
 	BidProvider provider.BidProvider
 	Codec       codec.Codec
+	Mempool     *mempool.ThresholdMempool
 	Keyname     string
 	RunProvider bool
 }
@@ -26,7 +27,7 @@ type ProcessProposalHandler struct {
 type VoteExtHandler struct {
 	logger       log.Logger
 	currentBlock int64
-	mempool      sdkmempool.Mempool
+	mempool      *mempool.ThresholdMempool
 	cdc          codec.Codec
 }
 

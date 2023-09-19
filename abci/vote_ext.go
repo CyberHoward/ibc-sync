@@ -8,11 +8,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkmempool "github.com/cosmos/cosmos-sdk/types/mempool"
+	"github.com/fatal-fruit/cosmapp/mempool"
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
-func NewVoteExtensionHandler(lg log.Logger, mp sdkmempool.Mempool, cdc codec.Codec) *VoteExtHandler {
+func NewVoteExtensionHandler(lg log.Logger, mp *mempool.ThresholdMempool, cdc codec.Codec) *VoteExtHandler {
 	return &VoteExtHandler{
 		logger:  lg,
 		mempool: mp,
@@ -27,10 +27,14 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		voteExtBids := [][]byte{}
 
 		// Get mempool txs
-		itr := h.mempool.Select(context.Background(), nil)
+		itr := h.mempool.SelectPending(context.Background(), nil)
+
+		var txs []sdk.Tx
 		for itr != nil {
 			tmptx := itr.Tx()
 			sdkMsgs := tmptx.GetMsgs()
+
+			txs = append(txs, tmptx)
 
 			// Iterate through msgs, check for any bids
 			for _, msg := range sdkMsgs {
@@ -47,10 +51,13 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				}
 			}
 
-			// Remove tx from app side mempool
-			err := h.mempool.Remove(tmptx)
+			// Move tx to ready pool
+			err := h.mempool.Update(context.Background(), tmptx)
+
+			//// Remove tx from app side mempool
+			//err = h.mempool.Remove(tmptx)
 			if err != nil {
-				h.logger.Info(fmt.Sprintf("Unable to remove tx from mempool: %w", err))
+				h.logger.Info(fmt.Sprintf("Unable to update mempool tx: %w", err))
 			}
 
 			itr = itr.Next()

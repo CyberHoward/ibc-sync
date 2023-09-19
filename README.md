@@ -33,7 +33,7 @@ make start-localnet
 
 jq '.consensus.params.abci.vote_extensions_enable_height = "2"' ~/.cosmappd/config/genesis.json > output.json && mv output.json ~/.cosmappd/config/genesis.json
 
-./build/cosmappd start
+./build/cosmappd start --val-key val1 --run-provider false
 ```
 
 #### Start a 3 Validator Network
