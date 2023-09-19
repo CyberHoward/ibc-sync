@@ -27,9 +27,60 @@ In part 1, we want to build a custom MEV extraction solution in preparePropsoal 
 
 ## Developing
 
-#### Start Chain
+#### Start A Single Chain
 ```
 make start-localnet
+
+jq '.consensus.params.abci.vote_extensions_enable_height = "2"' ~/.cosmappd/config/genesis.json > output.json && mv output.json ~/.cosmappd/config/genesis.json
+
+./build/cosmappd start --val-key val1 --run-provider false
+```
+
+#### Start a 3 Validator Network
+
+Make sure to run `make build`
+
+```shell
+./scripts/configure.sh
+```
+
+Read Logs
+```shell
+
+tail -f $HOME/cosmos/nodes/beacon/logs
+tail -f $HOME/cosmos/nodes/val1/logs
+tail -f $HOME/cosmos/nodes/val1/logs
+
+```
+
+Query a node
+```shell
+source ./scripts/vars.sh
+$BINARY q bank balances $($BINARY keys show alice -a --home $HOME/cosmos/nodes/beacon --keyring-backend test) --home $HOME/cosmos/nodes/beacon --node "tcp://127.0.0.1:29170"
+```
+
+### Demo
+
+> **Vote Extensions** are enabled from Height 2, so make sure not to submit transactions until H+1 has been comitted.
+
+
+#### Single Node
+```shell
+./build/cosmappd tx ns reserve "bob.cosmos" $(./build/cosmappd keys show alice -a --keyring-backend test) 1000uatom --from $(./build/cosmappd keys show bob -a --keyring-backend test) -y
+```
+Query to verify the name has been reserved
+```shell
+./build/cosmappd q ns whois "bob.cosmos" -o json
+```
+
+#### 3 Validator Network
+After submitting the following transaction, we should be able to see the proposal accepted or rejected in the logs.
+```shell
+$BINARY tx ns reserve "bob.cosmos" $($BINARY keys show alice -a --home $HOME/cosmos/nodes/beacon --keyring-backend test) 1000uatom --from $($BINARY keys show barbara -a --home $HOME/cosmos/nodes/beacon --keyring-backend test)  --home $HOME/cosmos/nodes/beacon --node "tcp://127.0.0.1:29170" -y
+```
+Query to verify the name has been reserved
+```shell
+$BINARY q ns whois "bob.cosmos" --node "tcp://127.0.0.1:29170" -o json
 ```
 
 ## Resources

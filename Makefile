@@ -141,17 +141,16 @@ start-localnet: build
 	./build/cosmappd init liveness --chain-id cosmos-1 --default-denom uatom
 	./build/cosmappd config set client chain-id cosmos-1
 	./build/cosmappd config set client keyring-backend test
-	./build/cosmappd keys add val
+	./build/cosmappd keys add val1
 	./build/cosmappd keys add alice
 	./build/cosmappd keys add bob
-	./build/cosmappd genesis add-genesis-account val 10000000000000000000000000uatom
+	./build/cosmappd genesis add-genesis-account val1 10000000000000000000000000uatom
 	./build/cosmappd genesis add-genesis-account alice 1000000000000000000uatom
 	./build/cosmappd genesis add-genesis-account bob 1000000000000000000uatom
-	./build/cosmappd genesis gentx val 1000000000uatom --chain-id cosmos-
+	./build/cosmappd genesis gentx val1 1000000000uatom --chain-id cosmos-
 	./build/cosmappd genesis collect-gentxs
 	sed -i.bak'' 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025uatom"/' ~/.cosmappd/config/app.toml
-	./build/cosmappd start
-
+	#./build/cosmappd start
 ###############################################################################
 ###                           Tests & Simulation                            ###
 ###############################################################################

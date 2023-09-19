@@ -1,17 +1,15 @@
 package cmd
 
 import (
+	"github.com/fatal-fruit/cosmapp/testutils"
 	"os"
 
 	"cosmossdk.io/log"
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/spf13/cast"
-
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 
 	"github.com/fatal-fruit/cosmapp/app"
@@ -24,18 +22,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
+func NewRootCmd() (*cobra.Command, testutils.EncodingConfig) {
 	tmpApp := app.NewApp(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
 		nil,
 		true,
 		map[int64]bool{},
-		cast.ToString(simtestutil.NewAppOptionsWithFlagHome(flags.FlagHome)),
+		"val",
 		simtestutil.NewAppOptionsWithFlagHome(tempDir()),
 	)
 
-	encodingConfig := app.EncodingConfig{
+	encodingConfig := testutils.EncodingConfig{
 		InterfaceRegistry: tmpApp.InterfaceRegistry(),
 		Marshaler:         tmpApp.AppCodec(),
 		TxConfig:          tmpApp.GetTxConfig(),
@@ -54,7 +52,7 @@ func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   app.AppName + "d",
-		Short: "Neutrino - Minimal SDK & IBC App",
+		Short: "Cosmos App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())

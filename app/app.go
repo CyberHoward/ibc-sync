@@ -1,18 +1,20 @@
 package app
 
 import (
-	"encoding/json"
-	"fmt"
-	abci2 "github.com/fatal-fruit/cosmapp/abci"
-	"github.com/fatal-fruit/cosmapp/provider"
-	"io"
-	"os"
-	"path/filepath"
-
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"encoding/json"
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	abci2 "github.com/fatal-fruit/cosmapp/abci"
+	mempool2 "github.com/fatal-fruit/cosmapp/mempool"
+	"github.com/fatal-fruit/cosmapp/provider"
+	"github.com/spf13/cast"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/std"
@@ -74,6 +76,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	apptypes "github.com/fatal-fruit/cosmapp/types"
 	nskeeper "github.com/fatal-fruit/ns/keeper"
 	nameservice "github.com/fatal-fruit/ns/module"
 	nstypes "github.com/fatal-fruit/ns/types"
@@ -142,10 +145,14 @@ func NewApp(
 	traceStore io.Writer,
 	loadLatest bool,
 	skipUpgradeHeights map[int64]bool,
-	homePath string,
+	valKeyName string,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+	// Set demo flag
+	runProvider := cast.ToBool(appOpts.Get(apptypes.FlagRunProvider))
+
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -163,6 +170,23 @@ func NewApp(
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
+
+	/*
+		*************************
+		Configure Appside Mempool
+		*************************
+	*/
+
+	mempool := mempool2.NewThresholdMempool(logger)
+	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
+		app.SetMempool(mempool)
+	})
+
+	voteExtOp := func(bApp *baseapp.BaseApp) {
+		voteExtHandler := abci2.NewVoteExtensionHandler(logger, mempool, appCodec)
+		bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
+	}
+	baseAppOptions = append(baseAppOptions, voteExtOp)
 
 	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
@@ -211,22 +235,18 @@ func NewApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Below we could construct and set an application specific mempool and
-	// ABCI 1.0 NewPrepareProposal and ProcessProposal handlers. These defaults are
-	// already set in the SDK's BaseApp, this shows an example of how to override
-	// them.
-	//
-	// Example:
-	//
-	// bApp := baseapp.NewBaseApp(...)
-	// nonceMempool := mempool.NewSenderNonceMempool()
+	/*
+		*************************
+		Configure ABCI++ Handlers
+		*************************
+	*/
 
-	bp := &provider.LocalBidProvider{
+	bp := &provider.LocalTxProvider{
 		Logger: logger,
 		Codec:  app.appCodec,
 		Signer: provider.LocalSigner{
-			KeyName:    "val",
-			KeyringDir: DefaultNodeHome,
+			KeyName:    valKeyName,
+			KeyringDir: homePath,
 		},
 		TxConfig:   app.txConfig,
 		AcctKeeper: app.AccountKeeper,
@@ -234,9 +254,10 @@ func NewApp(
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	abciPropHandler := abci2.ProposalHandler{app.txConfig, logger, bp}
-	bApp.SetPrepareProposal(abciPropHandler.NewPrepareProposal())
-	//bApp.SetProcessProposal(abci.ProcessProposalHandler())
+	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, mempool, valKeyName, runProvider}
+	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, appCodec, logger}
+	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
+	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 

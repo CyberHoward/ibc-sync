@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"errors"
+	"github.com/fatal-fruit/cosmapp/testutils"
+	"github.com/fatal-fruit/cosmapp/types"
 	"io"
 	"os"
 
@@ -55,7 +57,7 @@ func initAppConfig() (string, interface{}) {
 	return defaultAppTemplate, customAppConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig, basicManager module.BasicManager, defaultNodeHome string) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig testutils.EncodingConfig, basicManager module.BasicManager, defaultNodeHome string) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -76,13 +78,16 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig, basi
 		txCommand(),
 		keys.Commands(),
 	)
+
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	startCmd.Flags().String(types.FlagValKey, "", "Name of Validator Key to Sign Txs")
+	startCmd.Flags().String(types.FlagRunProvider, "false", "Run the transaction provider logic")
 }
 
-func genesisCommand(encodingConfig app.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
+func genesisCommand(encodingConfig testutils.EncodingConfig, defaultNodeHome string, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.Commands(encodingConfig.TxConfig, basicManager, defaultNodeHome)
 
 	for _, subCmd := range cmds {
@@ -151,13 +156,18 @@ func newApp(
 		skipUpgradeHeights[int64(h)] = true
 	}
 
+	valKey, ok := appOpts.Get(types.FlagValKey).(string)
+	if !ok {
+		valKey = "val"
+	}
+
 	return app.NewApp(
 		logger,
 		db,
 		traceStore,
 		true,
 		skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
+		valKey,
 		appOpts,
 		baseappOptions...,
 	)
@@ -174,6 +184,11 @@ func appExport(
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	var exportApp *app.App
+
+	valKey, ok := appOpts.Get(types.FlagValKey).(string)
+	if !ok {
+		return servertypes.ExportedApp{}, errors.New("validator key not set")
+	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
@@ -198,7 +213,7 @@ func appExport(
 		traceStore,
 		loadLatest,
 		map[int64]bool{},
-		homePath,
+		valKey,
 		appOpts,
 	)
 
