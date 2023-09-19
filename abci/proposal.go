@@ -46,6 +46,13 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		}
 		h.Logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions available from mempool: %v", len(txs)))
 
+		if h.RunProvider {
+			tmpMsgs, err := h.TxProvider.BuildProposal(ctx, txs)
+			if err != nil {
+				h.Logger.Error(fmt.Sprintf("❌️ :: Error Building Custom Proposal: %v", err))
+			}
+			txs = tmpMsgs
+		}
 		for _, sdkTxs := range txs {
 			txBytes, err := h.TxConfig.TxEncoder()(sdkTxs)
 			if err != nil {
@@ -87,7 +94,7 @@ func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposal
 					bids = append(bids, bid)
 				}
 				// Validate Bids in Tx
-				txs := req.Txs[1 : len(req.Txs)-1]
+				txs := req.Txs[1:]
 				// Temporarily pass req txs until fixed
 				//txs := req.Txs
 				ok, err := ValidateBids(h.TxConfig, bids, txs, h.Logger)
@@ -177,7 +184,10 @@ func ValidateBids(txConfig client.TxConfig, veBids []nstypes.MsgBid, proposalTxs
 	thresholdCount := int(float64(totalVotes) * 0.5)
 	logger.Info(fmt.Sprintf("🛠️ :: VE Threshold: %v", thresholdCount))
 	ok := true
+	logger.Info(fmt.Sprintf("🛠️ :: Number of Proposal Bids: %v", len(proposalBids)))
+
 	for _, p := range proposalBids {
+
 		key, err := Hash(p)
 		if err != nil {
 			logger.Error(fmt.Sprintf("❌️:: Unable to hash proposal bid :: %v", err))

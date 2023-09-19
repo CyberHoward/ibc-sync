@@ -11,7 +11,7 @@ import (
 type ProposalHandler struct {
 	TxConfig    client.TxConfig
 	Logger      log.Logger
-	BidProvider provider.BidProvider
+	TxProvider  provider.TxProvider
 	Codec       codec.Codec
 	Mempool     *mempool.ThresholdMempool
 	Keyname     string

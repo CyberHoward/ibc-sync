@@ -241,7 +241,7 @@ func NewApp(
 		*************************
 	*/
 
-	bp := &provider.LocalBidProvider{
+	bp := &provider.LocalTxProvider{
 		Logger: logger,
 		Codec:  app.appCodec,
 		Signer: provider.LocalSigner{

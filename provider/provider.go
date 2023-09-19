@@ -20,7 +20,7 @@ import (
 	This implementation is for demo purposes only and does not reflect all limitations and
 	constraints of a live distributed network.
 
-	Bid Provider is an embedded solution to demonstrate an interface an application could
+	TRansaction Provider is an embedded solution to demonstrate an interface an application could
 	leverage to extract MEV when building and proposing a block. In this example, the
 	application is building and signing transactions locally for the sake of a simplicity.
 	Alternatively, another implementation could instead take transactions submitted directly
@@ -28,8 +28,9 @@ import (
 	special transactions of this nature.
 */
 
-type BidProvider interface {
-	GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
+type TxProvider interface {
+	BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error)
+	getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
 }
 
 type LocalSigner struct {
@@ -41,7 +42,7 @@ type LocalSigner struct {
 	lg         log.Logger
 }
 
-type LocalBidProvider struct {
+type LocalTxProvider struct {
 	Logger     log.Logger
 	Codec      codec.Codec
 	Signer     LocalSigner
@@ -49,7 +50,7 @@ type LocalBidProvider struct {
 	AcctKeeper authkeeper.AccountKeeper
 }
 
-func (bp *LocalBidProvider) Init() error {
+func (bp *LocalTxProvider) Init() error {
 	return bp.Signer.Init(bp.TxConfig, bp.Codec, bp.Logger)
 }
 
@@ -133,14 +134,14 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 	return txBuilder.GetTx()
 }
 
-func (b *LocalBidProvider) GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx {
+func (b *LocalTxProvider) getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx {
 	acct, err := b.Signer.RetreiveSigner(ctx, b.AcctKeeper)
-	b.Logger.Info("Retrieved Signer")
+	b.Logger.Info("💨 :: Retrieved Signer")
 	if err != nil {
 		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
 		return nil
 	}
-	b.Logger.Info("Created new bid")
+	b.Logger.Info("💨 :: Created new bid")
 
 	msg := nstypes.MsgBid{
 		Name:           bid.Name,
@@ -151,4 +152,10 @@ func (b *LocalBidProvider) GetMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) 
 
 	newTx := b.Signer.BuildAndSignTx(ctx, acct, msg)
 	return newTx
+}
+
+func (b *LocalTxProvider) BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error) {
+	b.Logger.Info("💨 :: Building Proposal")
+
+	return proposalTxs, nil
 }
