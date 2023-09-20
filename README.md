@@ -13,7 +13,7 @@ In part 1, we explore the application and discuss a potential vector for MEV by 
 
 In part 2 and 3, we build a solution to mitigate auction front running by extending functionality in `ExtendVote`, `PrepareProposal`, and `ProcessProposal`. This solution assumes an honest 2/3 majority of validators are not colluding to front run transactions.
 
-At **H-1** during `ExtendVote`, we check the mempool for unconfirmed transactions and select all auction bids. Validators submit their Vote Extension with a list of all bids available in their mempool. 
+At **H-1** during `ExtendVote`, we check the mempool for unconfirmed transactions and select all auction bids. Validators submit their Vote Extension with a list of all bids available in their mempool.
 Additionally we implement a custom app side `ThresholdMempool`, which guarantees that transactions can only be included in a proposal if they have been seen by `ExtendVote` at H-1.
 
 At **H** during `PrepareProposal`, the validator will process all bids included in Vote Extensions from H-1. It will inject this result into a Special Transaction to be included in the proposal.
@@ -47,7 +47,9 @@ If a bid included in the proposal does not meet the minimum threshold of inclusi
 - [Jq](https://jqlang.github.io/jq/)
 
 #### Start A Single Chain
-> Note: Running the provider on a single chain will affect liveness. To run the provider safely on a single node, checkout the `part-1-2` branch.
+> Note: Running the provider on a single chain will affect liveness. This setup is best used to demonstrate Part 1.
+> First checkout [part-1-2](https://github.com/fatal-fruit/abci-workshop/tree/glnro/part-1-2) and navigate to the [single node demo](#single-node).
+
 ```
 make start-localnet
 
@@ -70,7 +72,6 @@ Read Logs
 tail -f $HOME/cosmos/nodes/beacon/logs
 tail -f $HOME/cosmos/nodes/val1/logs
 tail -f $HOME/cosmos/nodes/val1/logs
-
 ```
 
 Query a node
@@ -108,12 +109,17 @@ If the Beacon attempts to front run the bid, we will see the following logs duri
 ```
 
 #### Single Node
+
 ```shell
 ./build/cosmappd tx ns reserve "bob.cosmos" $(./build/cosmappd keys show alice -a --keyring-backend test) 1000uatom --from $(./build/cosmappd keys show bob -a --keyring-backend test) -y
 ```
-Query to verify the name has been reserved
+Query to verify the name has been reserved.
+
+If running the provider on the `part-1-2` branch, we can see that the owner and resolve address are different than the original transaction we submitted.
 ```shell
 ./build/cosmappd q ns whois "bob.cosmos" -o json
+
+./build/cosmappd keys list --keyring-backend test --output json | jq
 ```
 
 ## Resources
@@ -123,12 +129,12 @@ Official Docs
 - [Cosmos SDK](https://docs.cosmos.network/main)
 
 ABCI++
-- [ACBI++ Spec: Basic Concepts](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#consensusblock-execution-methods) 
+- [ACBI++ Spec: Basic Concepts](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#consensusblock-execution-methods)
 - [ABCI++ Spec: Application Requirements](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md)
 - [Skip's POB Article](https://ideas.skip.money/t/x-builder-the-first-sovereign-mev-module-for-protocol-owned-building/57)
 - Videos
-    - [Sergio from Informal: Presentation on ABCI++](https://youtube.com/watch?v=cAR57hZaJtM)
-    - [Evan from Celestia: Possible Applications of ABCI++](https://www.youtube.com/watch?v=VGdIZLVYoRs)
+  - [Sergio from Informal: Presentation on ABCI++](https://youtube.com/watch?v=cAR57hZaJtM)
+  - [Evan from Celestia: Possible Applications of ABCI++](https://www.youtube.com/watch?v=VGdIZLVYoRs)
 
 Building Applications
 - [Facu from Binary Builders: Building Cosmos SDK Modules](https://www.youtube.com/watch?v=9kK9uzwEeOE)
