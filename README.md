@@ -4,30 +4,50 @@ Joint workshop between [Cosmos SDK](https://docs.cosmos.network/main) and [Comet
 
 Supported by [Informal Systems](https://informal.systems/) and [Binary Builders](https://binary.builders/).
 
-## Content
+## Concepts
 **Overview**
 
-The goal of this workshop is to demonstrate to developers how they might think about leveraging ABCI++ and new features in the Eden release of the Cosmos SDK.
+The goal of this workshop is to demonstrate to developers how they might think about utilizing ABCI++ and new features in the Eden release of the Cosmos SDK.
 
-In part 1, we want to build a custom MEV extraction solution in preparePropsoal for a validator that submits competing bids for a perpetual nameservice auction. Then in part 2, we want to mitigate leveraging vote extensions.
+In part 1, we explore the application and discuss a potential vector for MEV by leveraging custom block building in `PreparePropsoal` for a chain running perpetual nameservice auctions.
 
-**Part 1**
-1. We have 1 validator that wires up a custom prepareProposal handler. It checks the transactions for bids and when it sees one, it submits one into the proposal that offers a more competitive price.
+In part 2 and 3, we build a solution to mitigate auction front running by extending functionality in `ExtendVote`, `PrepareProposal`, and `ProcessProposal`. This solution assumes an honest 2/3 majority of validators are not colluding to front run transactions.
 
-**Part 2**
-1. In ExtendVote, we submit an array of Bid Transactions that are currently sitting in the mempool.
-2. In ProcessProposal in the subsequent round, it's going to validate that the unconfirmed bids listed in the VE match the bids in the current proposal
-### Concepts
+At **H-1** during `ExtendVote`, we check the mempool for unconfirmed transactions and select all auction bids. Validators submit their Vote Extension with a list of all bids available in their mempool. 
+Additionally we implement a custom app side `ThresholdMempool`, which guarantees that transactions can only be included in a proposal if they have been seen by `ExtendVote` at H-1.
+
+At **H** during `PrepareProposal`, the validator will process all bids included in Vote Extensions from H-1. It will inject this result into a Special Transaction to be included in the proposal.
+During the subsequent `ProcessProposal`, validators will check if there are any bid transactions. Bids included in the proposal will be validated against the bids included in the Special Transaction.
+If a bid included in the proposal does not meet the minimum threshold of inclusion frequency in Vote Extensions from H-1, the proposal is rejected.
 
 ![](./figures/diagram.png)
 
+## Content
+
 ### Part 1
+1. Getting Started
+2. Exploring MEV Mitigation
 
 ### Part 2
+1. Submit Proof of Existence with Vote Extensions
+2. Winning the Race: Modifying the Mempool
+
+### Part 3
+1. Collating Evidence in Prepare Proposal
+2. Detecting & Deflecting Misbehavior with Process Proposal
+
+<hr>
 
 ## Developing
 
+### Setup
+
+**Dependencies**
+- [Go 1.21](https://go.dev/dl/)
+- [Jq](https://jqlang.github.io/jq/)
+
 #### Start A Single Chain
+> Note: Running the provider on a single chain will affect liveness. To run the provider safely on a single node, checkout the `part-1-2` branch.
 ```
 make start-localnet
 
@@ -55,14 +75,37 @@ tail -f $HOME/cosmos/nodes/val1/logs
 
 Query a node
 ```shell
-source ./scripts/vars.sh
-$BINARY q bank balances $($BINARY keys show alice -a --home $HOME/cosmos/nodes/beacon --keyring-backend test) --home $HOME/cosmos/nodes/beacon --node "tcp://127.0.0.1:29170"
+./scripts/query-beacon-status.sh
+```
+
+List Available User Keys
+```shell
+./scripts/list-beacon-keys.sh
 ```
 
 ### Demo
 
 > **Vote Extensions** are enabled from Height 2, so make sure not to submit transactions until H+1 has been comitted.
 
+#### 3 Validator Network
+In the 3 validator network, the Beacon validator has a custom transaction provider enabled.
+It might take a few tries before the transaction is picked up and front ran by the Beacon.
+
+After submitting the following transaction, we should be able to see the proposal accepted or rejected in the logs.
+Note that it is best to submit the transaction after the Beacon has just proposed a successful proposal.
+```shell
+./scripts/reserve.sh "bob.cosmos"
+```
+Query to verify the name has been reserved
+```shell
+./scripts/whois.sh "bob.cosmos"
+```
+If the Beacon attempts to front run the bid, we will see the following logs during `ProcessProposal`
+```shell
+2:47PM ERR ❌️:: Detected invalid proposal bid :: name:"bob.cosmos" resolveAddress:"cosmos1wmuwv38pdur63zw04t0c78r2a8dyt08hf9tpvd" owner:"cosmos1wmuwv38pdur63zw04t0c78r2a8dyt08hf9tpvd" amount:<denom:"uatom" amount:"2000" >  module=server
+2:47PM ERR ❌️:: Unable to validate bids in Process Proposal :: <nil> module=server
+2:47PM ERR prevote step: state machine rejected a proposed block; this should not happen:the proposer may be misbehaving; prevoting nil err=null height=142 module=consensus round=0
+```
 
 #### Single Node
 ```shell
@@ -71,16 +114,6 @@ $BINARY q bank balances $($BINARY keys show alice -a --home $HOME/cosmos/nodes/b
 Query to verify the name has been reserved
 ```shell
 ./build/cosmappd q ns whois "bob.cosmos" -o json
-```
-
-#### 3 Validator Network
-After submitting the following transaction, we should be able to see the proposal accepted or rejected in the logs.
-```shell
-$BINARY tx ns reserve "bob.cosmos" $($BINARY keys show alice -a --home $HOME/cosmos/nodes/beacon --keyring-backend test) 1000uatom --from $($BINARY keys show barbara -a --home $HOME/cosmos/nodes/beacon --keyring-backend test)  --home $HOME/cosmos/nodes/beacon --node "tcp://127.0.0.1:29170" -y
-```
-Query to verify the name has been reserved
-```shell
-$BINARY q ns whois "bob.cosmos" --node "tcp://127.0.0.1:29170" -o json
 ```
 
 ## Resources

@@ -8,28 +8,49 @@ import (
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/fatal-fruit/cosmapp/mempool"
+	"github.com/fatal-fruit/cosmapp/provider"
 	nstypes "github.com/fatal-fruit/ns/types"
 )
 
-func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
+func NewPrepareProposalHandler(
+	lg log.Logger,
+	txCg client.TxConfig,
+	cdc codec.Codec,
+	mp *mempool.ThresholdMempool,
+	pv provider.TxProvider,
+	runProv bool,
+) *PrepareProposalHandler {
+	return &PrepareProposalHandler{
+		logger:      lg,
+		txConfig:    txCg,
+		cdc:         cdc,
+		mempool:     mp,
+		txProvider:  pv,
+		runProvider: runProv,
+	}
+}
+
+func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-		h.Logger.Info(fmt.Sprintf("🛠️ :: Prepare Proposal"))
+		h.logger.Info(fmt.Sprintf("🛠️ :: Prepare Proposal"))
 		var proposalTxs [][]byte
 
 		// Get Vote Extensions
 		if req.Height > 2 {
 
 			// Get Special Transaction
-			ve, err := processVoteExtensions(req, h.Logger)
+			ve, err := processVoteExtensions(req, h.logger)
 			if err != nil {
-				h.Logger.Error(fmt.Sprintf("❌️ :: Unable to process Vote Extensions: %v", err))
+				h.logger.Error(fmt.Sprintf("❌️ :: Unable to process Vote Extensions: %v", err))
 			}
 
 			// Marshal Special Transaction
 			bz, err := json.Marshal(ve)
 			if err != nil {
-				h.Logger.Error(fmt.Sprintf("❌️ :: Unable to marshal Vote Extensions: %v", err))
+				h.logger.Error(fmt.Sprintf("❌️ :: Unable to marshal Vote Extensions: %v", err))
 			}
 
 			// Append Special Transaction to proposal
@@ -37,38 +58,38 @@ func (h *ProposalHandler) NewPrepareProposal() sdk.PrepareProposalHandler {
 		}
 
 		var txs []sdk.Tx
-		itr := h.Mempool.Select(context.Background(), nil)
+		itr := h.mempool.Select(context.Background(), nil)
 		for itr != nil {
 			tmptx := itr.Tx()
 
 			txs = append(txs, tmptx)
 			itr = itr.Next()
 		}
-		h.Logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions available from mempool: %v", len(txs)))
+		h.logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions available from mempool: %v", len(txs)))
 
-		if h.RunProvider {
-			tmpMsgs, err := h.TxProvider.BuildProposal(ctx, txs)
+		if h.runProvider {
+			tmpMsgs, err := h.txProvider.BuildProposal(ctx, txs)
 			if err != nil {
-				h.Logger.Error(fmt.Sprintf("❌️ :: Error Building Custom Proposal: %v", err))
+				h.logger.Error(fmt.Sprintf("❌️ :: Error Building Custom Proposal: %v", err))
 			}
 			txs = tmpMsgs
 		}
 
 		for _, sdkTxs := range txs {
-			txBytes, err := h.TxConfig.TxEncoder()(sdkTxs)
+			txBytes, err := h.txConfig.TxEncoder()(sdkTxs)
 			if err != nil {
-				h.Logger.Info(fmt.Sprintf("❌~Error encoding transaction: %v", err.Error()))
+				h.logger.Info(fmt.Sprintf("❌~Error encoding transaction: %v", err.Error()))
 			}
 			proposalTxs = append(proposalTxs, txBytes)
 		}
 
-		h.Logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions in proposal: %v", len(proposalTxs)))
+		h.logger.Info(fmt.Sprintf("🛠️ :: Number of Transactions in proposal: %v", len(proposalTxs)))
 
 		return &abci.ResponsePrepareProposal{Txs: proposalTxs}, nil
 	}
 }
 
-func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposalHandler {
+func (h *ProcessProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (resp *abci.ResponseProcessProposal, err error) {
 		h.Logger.Info(fmt.Sprintf("⚙️ :: Process Proposal"))
 
@@ -96,8 +117,6 @@ func (h *ProcessProposalHandler) NewProcessProposalHandler() sdk.ProcessProposal
 				}
 				// Validate Bids in Tx
 				txs := req.Txs[1:]
-				// Temporarily pass req txs until fixed
-				//txs := req.Txs
 				ok, err := ValidateBids(h.TxConfig, bids, txs, h.Logger)
 				if err != nil {
 					h.Logger.Error(fmt.Sprintf("❌️:: Error validating bids in Process Proposal :: %v", err))

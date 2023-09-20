@@ -173,7 +173,7 @@ func NewApp(
 
 	/*
 		*************************
-		Configure Appside Mempool
+		Configure Appside mempool
 		*************************
 	*/
 
@@ -240,7 +240,6 @@ func NewApp(
 		Configure ABCI++ Handlers
 		*************************
 	*/
-
 	bp := &provider.LocalTxProvider{
 		Logger: logger,
 		Codec:  app.appCodec,
@@ -254,10 +253,10 @@ func NewApp(
 	if err := bp.Init(); err != nil {
 		panic(err)
 	}
-	propHandler := abci2.ProposalHandler{app.txConfig, logger, bp, appCodec, mempool, valKeyName, runProvider}
+	prepareProposalHandler := abci2.NewPrepareProposalHandler(logger, app.txConfig, appCodec, mempool, bp, runProvider)
 	processPropHandler := abci2.ProcessProposalHandler{app.txConfig, appCodec, logger}
-	bApp.SetPrepareProposal(propHandler.NewPrepareProposal())
-	bApp.SetProcessProposal(processPropHandler.NewProcessProposalHandler())
+	bApp.SetPrepareProposal(prepareProposalHandler.PrepareProposalHandler())
+	bApp.SetProcessProposal(processPropHandler.ProcessProposalHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 

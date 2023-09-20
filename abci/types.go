@@ -8,14 +8,14 @@ import (
 	"github.com/fatal-fruit/cosmapp/provider"
 )
 
-type ProposalHandler struct {
-	TxConfig    client.TxConfig
-	Logger      log.Logger
-	TxProvider  provider.TxProvider
-	Codec       codec.Codec
-	Mempool     *mempool.ThresholdMempool
-	Keyname     string
-	RunProvider bool
+type PrepareProposalHandler struct {
+	logger      log.Logger
+	txConfig    client.TxConfig
+	cdc         codec.Codec
+	mempool     *mempool.ThresholdMempool
+	txProvider  provider.TxProvider
+	keyname     string
+	runProvider bool
 }
 
 type ProcessProposalHandler struct {
