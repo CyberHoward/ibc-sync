@@ -71,8 +71,8 @@ package app
 //
 //func appModules(
 //	app *App,
-//	appCodec codec.Codec,
-//	txConfig client.TxConfig,
+//	appCodec codec.cdc,
+//	txConfig client.txConfig,
 //) []module.AppModule {
 //
 //	return []module.AppModule{
