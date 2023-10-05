@@ -29,12 +29,9 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		// Get mempool txs
 		itr := h.mempool.SelectPending(context.Background(), nil)
 
-		var txs []sdk.Tx
 		for itr != nil {
 			tmptx := itr.Tx()
 			sdkMsgs := tmptx.GetMsgs()
-
-			txs = append(txs, tmptx)
 
 			// Iterate through msgs, check for any bids
 			for _, msg := range sdkMsgs {
@@ -69,7 +66,7 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			Bids:   voteExtBids,
 		}
 
-		// Marshal Vote Extension
+		// Encode Vote Extension
 		bz, err := json.Marshal(voteExt)
 		if err != nil {
 			return nil, fmt.Errorf("Error marshalling VE: %w", err)
