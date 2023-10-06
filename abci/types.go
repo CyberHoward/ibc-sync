@@ -4,7 +4,11 @@ import (
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
 	"github.com/fatal-fruit/cosmapp/mempool"
+	// "github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/fatal-fruit/cosmapp/provider"
 )
 
@@ -31,21 +35,33 @@ type VoteExtHandler struct {
 	cdc          codec.Codec
 }
 
-type InjectedVoteExt struct {
-	VoteExtSigner []byte
-	Bids          [][]byte
-}
-
-type InjectedVotes struct {
-	Votes []InjectedVoteExt
-}
-
+// The vote extension of a validator
 type AppVoteExtension struct {
 	Height int64
-	Bids   [][]byte
+	// Serialized IbcUpdate struct
+	IbcUpdate []byte
 }
 
 type SpecialTransaction struct {
 	Height int
-	Bids   [][]byte
 }
+
+// Data in the vote. Signer data will be ignored.
+type IbcUpdate struct {
+	Packet       channeltypes.MsgRecvPacket
+	ClientUpdate clienttypes.MsgUpdateClient
+}
+
+type FetchedIbcUpdate struct {
+	Height int64
+	// Will be base64 decoded and marshalled using proto into []channeltypes.MsgRecvPacket
+	ClientUpdates []string `json:"client_updates"`
+	// Will be base64 decoded and marshalled using proto into []clienttypes.MsgUpdateClient
+	Packets []string `json:"packets"`
+}
+
+// write test for FetchIbcUpdate json deserialization.
+
+// Add txs to cometBFT mempool
+//
+// zero-trust by using the signatures provided with the votes.
