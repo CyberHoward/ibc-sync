@@ -89,9 +89,7 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 				h.logger.Error(fmt.Sprintf("❌️ client_bytes: %v", clientBytes))
 
 				var msg clienttypes.MsgUpdateClient
-
-				h.cdc.
-					err = h.cdc.Unmarshal(clientBytes, &msg)
+				err = h.cdc.Unmarshal(clientBytes, &msg)
 				if err != nil {
 					panic(err)
 				}
