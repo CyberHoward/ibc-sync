@@ -1,0 +1,27 @@
+[package]
+name = "packet-dump"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+base64 = "0.21.4"
+cosmrs = "0.14.0"
+cosmwasm-std = "1.4.0"
+# cw-orch-interchain = { version = "0.16.2", path = "../../../abstract/cw-orch-interchain/cw-orch" }
+cw-orch-interchain = { version = "0.16.2", git="ssh://git@github.com/AbstractSDK/cw-orch-interchain.git", features=["daemon"], branch="hackmos" }
+cw-orch-proto = { version = "0.16.0", git="ssh://git@github.com/AbstractSDK/cw-orch-interchain.git", branch="hackmos"  }
+env_logger = "0.10.0"
+futures = "0.3.28"
+ibc-chain-registry = "0.25.0"
+ibc-proto = "0.32.1"
+ibc-relayer = "0.25.1"
+ibc-relayer-types = "0.25.1"
+log = "0.4.20"
+prost = "0.12.1"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+tendermint-light-client = "0.32.0"
+tonic = "0.9.2"
