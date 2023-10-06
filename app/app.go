@@ -266,7 +266,7 @@ func NewApp(
 		Logger: logger,
 		Codec:  app.appCodec,
 		Signer: provider.LocalSigner{
-			KeyName:    valKeyName,
+			KeyName:    "val0",
 			KeyringDir: homePath,
 		},
 		TxConfig:   app.txConfig,

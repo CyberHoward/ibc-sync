@@ -6,6 +6,14 @@ WORKDIR /src
 # hadolint ignore=DL4006
 RUN set -eux \
     && apk add --no-cache ca-certificates build-base git linux-headers
+
+# go dependencies
+COPY go.mod /src/
+COPY go.sum /src/
+
+RUN go mod tidy
+
+# copy source
 COPY . /src/
 
 RUN BUILD_TAGS=muslc LINK_STATICALLY=true make build

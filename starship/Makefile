@@ -1,4 +1,4 @@
-NAME = starship-getting-started
+NAME = ibc-sync
 FILE = configs/local.yaml
 
 HELM_REPO = starship
