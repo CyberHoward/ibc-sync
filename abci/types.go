@@ -55,10 +55,19 @@ type IbcUpdate struct {
 type FetchedIbcUpdate struct {
 	Height int64
 	// Will be base64 decoded and marshalled using proto into []channeltypes.MsgRecvPacket
-	ClientBytes string `json:"client_bytes"`
+	ClientBytes []string `json:"client_bytes"`
+	// ClientUpdates string `json:"client_updates"`
 	// Will be base64 decoded and marshalled using proto into []clienttypes.MsgUpdateClient
-	PacketBytes string `json:"packet_bytes"`
+	PacketBytes []string `json:"packet_bytes"`
 }
+
+// type UpdateClientJson struct {
+// 	client_id           string `json:"client_id"`
+// 	signer              string `json:"signer"`
+// 	client_message_data []byte `json:"client_message_data"`
+// }
+
+// write test for FetchIbcUpdate json deserialization.
 
 // Add txs to cometBFT mempool
 //

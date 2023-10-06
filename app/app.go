@@ -1,9 +1,13 @@
 package app
 
 import (
-	"cosmossdk.io/x/feegrant"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"cosmossdk.io/x/feegrant"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
 	ibcfeekeeper "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/keeper"
@@ -17,9 +21,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	"io"
-	"os"
-	"path/filepath"
 
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
@@ -138,12 +139,13 @@ type App struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	CapabilityKeeper      *capabilitykeeper.Keeper
 
-	IBCKeeper      *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	IBCFeeKeeper   ibcfeekeeper.Keeper
 	TransferKeeper ibctransferkeeper.Keeper
 
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
+
+	IBCKeeper *ibckeeper.Keeper
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
