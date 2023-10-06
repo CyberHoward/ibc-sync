@@ -173,3 +173,22 @@ else
 	@echo "--> Running tests"
 	@go test -mod=readonly $(ARGS) $(TEST_PACKAGES)
 endif
+
+###############################################################################
+###                           Docker commands                               ###
+###############################################################################
+
+DOCKER_NAME := ibc-sync
+DOCKER_REPO_NAME := anmol1696
+
+.PHONY: docker-setup
+docker-setup:
+	-@docker buildx create --use --name $(DOCKER_NAME)
+
+.PHONY: docker-build
+docker-build:
+	docker buildx build --platform linux/arm64,linux/amd64 -t $(DOCKER_REPO_NAME)/$(DOCKER_NAME):latest .
+
+.PHONY: docker-build-push
+docker-build-push:
+	docker buildx build --platform linux/arm64,linux/amd64 -t $(DOCKER_REPO_NAME)/$(DOCKER_NAME):latest . --push
