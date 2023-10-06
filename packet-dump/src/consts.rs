@@ -1,4 +1,4 @@
-use cw_orch::{
+use cw_orch_interchain::{
     daemon::{ChainInfo, ChainKind},
     prelude::networks::osmosis::OSMO_NETWORK,
 };

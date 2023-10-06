@@ -1,8 +1,8 @@
-use cw_orch::prelude::*;
-use cw_orch::{daemon::GrpcChannel, prelude::networks};
+use cw_orch_interchain::prelude::*;
+use cw_orch_interchain::{daemon::GrpcChannel, prelude::networks};
 use ibc_chain_registry::chain::ChainData;
 
-use cw_orch::tokio;
+use cw_orch_interchain::tokio;
 use packet_dump::consts::OSMOSIS_1;
 async fn test() -> packet_dump::AnyResult<()> {
     env_logger::init();

@@ -1,7 +1,7 @@
 use std::{str::FromStr, fmt::Display};
 
 use cosmrs::{rpc::{HttpClient, Client, endpoint::abci_query::AbciQuery, Url}};
-use cw_orch::prelude::networks::JUNO_1;
+use cw_orch_interchain::prelude::networks::JUNO_1;
 use cw_orch_proto::tokenfactory::FUTURE_TIMEOUT_IN_NANO_SECONDS;
 use ibc_chain_registry::chain::ChainData;
 

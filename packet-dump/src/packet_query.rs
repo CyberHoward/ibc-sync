@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{ibc::Ibc, AnyResult};
 use cosmrs::proto::ibc::core::connection::v1::IdentifiedConnection;
-use cw_orch::{prelude::queriers::{DaemonQuerier, Node}, daemon::CosmTxResponse};
+use cw_orch_interchain::{prelude::queriers::{DaemonQuerier, Node}, daemon::CosmTxResponse};
 use tonic::transport::Channel;
 
 pub async fn get_connections(

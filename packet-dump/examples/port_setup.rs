@@ -1,5 +1,5 @@
 use cosmwasm_std::coin;
-use cw_orch::tokio::runtime::Runtime;
+use cw_orch_interchain::tokio::runtime::Runtime;
 use cw_orch_interchain::prelude::{ChannelCreator, Starship};
 use packet_dump::create_packets;
 

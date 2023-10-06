@@ -893,6 +893,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain"
 version = "0.16.2"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "cosmwasm-std",
  "cw-orch",
@@ -910,6 +911,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain-core"
 version = "0.16.0"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -928,6 +930,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain-daemon"
 version = "0.16.0"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -956,6 +959,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain-mock"
 version = "0.16.0"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -997,6 +1001,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-proto"
 version = "0.16.0"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "anyhow",
  "cosmos-sdk-proto",
@@ -1015,6 +1020,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-starship"
 version = "0.16.1"
+source = "git+ssh://git@github.com/AbstractSDK/cw-orch-interchain.git?branch=hackmos#9a9a47ad964055285db9201de04e48e95848ae1b"
 dependencies = [
  "cosmwasm-std",
  "cw-orch",
@@ -2856,7 +2862,6 @@ dependencies = [
  "base64 0.21.4",
  "cosmrs",
  "cosmwasm-std",
- "cw-orch",
  "cw-orch-interchain",
  "cw-orch-proto",
  "env_logger",

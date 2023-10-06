@@ -1,13 +1,13 @@
 use std::str::FromStr;
 
 use cosmrs::{proto::traits::Message, Any};
-use cw_orch::{tokio::runtime::{Handle, Runtime}, prelude::networks::JUNO_1, state::ChainState};
+use cw_orch_interchain::{tokio::runtime::{Handle, Runtime}, prelude::networks::JUNO_1, state::ChainState};
 use cw_orch_interchain::interchain::{
     channel::{IbcPort, InterchainChannel},
     InterchainEnv,
 };
 use cw_orch_interchain::prelude::*;
-use cw_orch_proto::tokenfactory::{transfer_tokens};
+use cw_orch_proto::tokenfactory::{transfer_tokens, create_transfer_channel};
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::{packet_query::{query_all_unreceived_packets}, packet_info::get_packet_info, update_client::get_client_message, ibc::Ibc};
@@ -35,15 +35,15 @@ pub fn setup<IBC: InterchainEnv<Daemon>>(
     let dst_chain = interchain.chain(dst_chain_id)?;
 
     // Now create channel between 2 chains
-    // create_ibc_trail(
-    //     rt,
-    //     interchain,
-    //     src_chain_id,
-    //     dst_chain_id,
-    //     &src_chain,
-    //     &dst_chain,
-    //     funds,
-    // )?;
+    create_ibc_trail(
+        rt,
+        interchain,
+        src_chain_id,
+        dst_chain_id,
+        &src_chain,
+        &dst_chain,
+        funds,
+    )?;
     // Now see what packets are still in transit
     let packets_to_relay = rt.block_on(query_all_unreceived_packets(
         src_chain.channel(),
@@ -70,6 +70,7 @@ pub fn setup<IBC: InterchainEnv<Daemon>>(
             let update_client = get_client_message(p.clone(), &dst_chain, dst_chain.state().chain_data.clone()).await?;
             
             let raw_update_client : ibc_proto::ibc::core::client::v1::MsgUpdateClient = update_client.into();
+            log::info!("{:?}", raw_update_client);
 
 
             Ok::<_, anyhow::Error>(general_purpose::STANDARD.encode(raw_update_client.encode_to_vec()))
@@ -109,24 +110,24 @@ pub fn create_ibc_trail<IBC: InterchainEnv<Daemon>>(
     dst_chain: &Daemon,
     funds: Coin,
 ) -> anyhow::Result<()> {
-    // let ibc_channel = rt.block_on(create_transfer_channel(src_chain_id, dst_chain_id, None, interchain))?;
+    let ibc_channel = rt.block_on(create_transfer_channel(src_chain_id, dst_chain_id, None, interchain))?;
 
-    let ibc_channel = InterchainChannel {
-        port_a: IbcPort {
-            chain_id: src_chain_id.to_string(),
-            connection_id: Some("connection-0".to_string()),
-            port: PortId::from_str("transfer")?,
-            channel: Some(ChannelId::from_str("channel-0")?),
-            chain: src_chain.channel(),
-        },
-        port_b: IbcPort {
-            chain_id: dst_chain_id.to_string(),
-            connection_id: Some("connection-0".to_string()),
-            port: PortId::from_str("transfer")?,
-            channel: Some(ChannelId::from_str("channel-0")?),
-            chain: dst_chain.channel(),
-        },
-    };
+    // let ibc_channel = InterchainChannel {
+    //     port_a: IbcPort {
+    //         chain_id: src_chain_id.to_string(),
+    //         connection_id: Some("connection-0".to_string()),
+    //         port: PortId::from_str("transfer")?,
+    //         channel: Some(ChannelId::from_str("channel-0")?),
+    //         chain: src_chain.channel(),
+    //     },
+    //     port_b: IbcPort {
+    //         chain_id: dst_chain_id.to_string(),
+    //         connection_id: Some("connection-0".to_string()),
+    //         port: PortId::from_str("transfer")?,
+    //         channel: Some(ChannelId::from_str("channel-0")?),
+    //         chain: dst_chain.channel(),
+    //     },
+    // };
 
     let receiver = dst_chain.sender().to_string();
 

@@ -10,9 +10,9 @@ anyhow = "1.0.75"
 base64 = "0.21.4"
 cosmrs = "0.14.0"
 cosmwasm-std = "1.4.0"
-cw-orch = { version = "0.16.4", features = ["daemon"] }
-cw-orch-interchain = { version = "0.16.2", path = "../../../abstract/cw-orch-interchain/cw-orch" }
-cw-orch-proto = { version = "0.16.0", path = "../../../abstract/cw-orch-interchain/packages/proto" }
+# cw-orch-interchain = { version = "0.16.2", path = "../../../abstract/cw-orch-interchain/cw-orch" }
+cw-orch-interchain = { version = "0.16.2", git="ssh://git@github.com/AbstractSDK/cw-orch-interchain.git", features=["daemon"], branch="hackmos" }
+cw-orch-proto = { version = "0.16.0", git="ssh://git@github.com/AbstractSDK/cw-orch-interchain.git", branch="hackmos"  }
 env_logger = "0.10.0"
 futures = "0.3.28"
 ibc-chain-registry = "0.25.0"

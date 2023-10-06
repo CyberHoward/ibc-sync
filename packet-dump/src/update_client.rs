@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cosmrs::{proto::ibc::core::client::v1::Height, rpc::{HttpClient, Client}};
-use cw_orch::prelude::{queriers::{DaemonQuerier, Node}, Daemon, TxHandler};
+use cw_orch_interchain::prelude::{queriers::{DaemonQuerier, Node}, Daemon, TxHandler};
 use ibc_chain_registry::chain::ChainData;
 use ibc_relayer::light_client::Verified;
 use ibc_relayer_types::{core::{ics02_client::msgs::update_client::MsgUpdateClient, ics24_host::identifier::ClientId}, signer::Signer, clients::ics07_tendermint::header::Header};

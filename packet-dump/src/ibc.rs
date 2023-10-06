@@ -13,7 +13,7 @@ use cosmrs::proto::{
     },
     traits::Message,
 };
-use cw_orch::{daemon::DaemonError, prelude::queriers::DaemonQuerier};
+use cw_orch_interchain::{daemon::DaemonError, prelude::queriers::DaemonQuerier};
 use tonic::transport::Channel;
 
 /// Querier for the Cosmos IBC module
