@@ -1,9 +1,9 @@
 package provider
 
 import (
-	"cosmossdk.io/log"
-	"cosmossdk.io/math"
 	"fmt"
+
+	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -13,7 +13,6 @@ import (
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	nstypes "github.com/fatal-fruit/ns/types"
 )
 
 /*
@@ -30,7 +29,8 @@ import (
 
 type TxProvider interface {
 	BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error)
-	getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
+	SignMsgs(ctx sdk.Context, msgs []sdk.Msg) sdk.Tx
+	// getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
 }
 
 type LocalSigner struct {
@@ -107,7 +107,8 @@ func (ls *LocalSigner) RetreiveSigner(ctx sdk.Context, actKeeper authkeeper.Acco
 	return acct, nil
 }
 
-func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg nstypes.MsgBid) sdk.Tx {
+// Builds the IBC txs and signs them
+func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msgs []sdk.Msg) sdk.Tx {
 	factory := tx.Factory{}.
 		WithTxConfig(ls.txConfig).
 		WithKeybase(ls.kb).
@@ -116,7 +117,7 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 		WithSequence(acct.GetSequence()).
 		WithFees("50uatom")
 
-	txBuilder, err := factory.BuildUnsignedTx(&msg)
+	txBuilder, err := factory.BuildUnsignedTx(msgs...)
 	if err != nil {
 		ls.lg.Error(fmt.Sprintf("Error building unsigned tx: %v", err))
 
@@ -133,49 +134,40 @@ func (ls *LocalSigner) BuildAndSignTx(ctx sdk.Context, acct types.AccountI, msg 
 	return txBuilder.GetTx()
 }
 
-func (b *LocalTxProvider) getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx {
-	acct, err := b.Signer.RetreiveSigner(ctx, b.AcctKeeper)
-	if err != nil {
-		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
-		return nil
-	}
-	b.Logger.Info("💨 :: Created new bid")
-
-	msg := nstypes.MsgBid{
-		Name:           bid.Name,
-		Owner:          acct.GetAddress().String(),
-		ResolveAddress: acct.GetAddress().String(),
-		Amount:         bid.Amount.MulInt(math.NewInt(2)),
-	}
-
-	newTx := b.Signer.BuildAndSignTx(ctx, acct, msg)
-	return newTx
-}
-
 func (b *LocalTxProvider) BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error) {
 	b.Logger.Info("💨 :: Building Proposal")
 
 	var newProposal []sdk.Tx
-	for _, tx := range proposalTxs {
-		sdkMsgs := tx.GetMsgs()
-		for _, msg := range sdkMsgs {
-			switch msg := msg.(type) {
-			case *nstypes.MsgBid:
-				b.Logger.Info("💨 :: Found a Bid to Snipe")
+	// for _, tx := range proposalTxs {
+	// 	sdkMsgs := tx.GetMsgs()
+	// 	for _, msg := range sdkMsgs {
+	// 		switch msg := msg.(type) {
+	// 		case *nstypes.MsgBid:
+	// 			b.Logger.Info("💨 :: Found a Bid to Snipe")
 
-				// Get matching bid from matching engine
-				newTx := b.getMatchingBid(ctx, msg)
+	// 			// Get matching bid from matching engine
+	// 			// newTx := b.getMatchingBid(ctx, msg)
 
-				// First append sniped Bid
-				newProposal = append(newProposal, newTx)
-				newProposal = append(newProposal, tx)
-			default:
-				// Append all other transactions
-				newProposal = append(newProposal, tx)
-			}
+	// 			// First append sniped Bid
+	// 			newProposal = append(newProposal, newTx)
+	// 			newProposal = append(newProposal, tx)
+	// 		default:
+	// 			// Append all other transactions
+	// 			newProposal = append(newProposal, tx)
+	// 		}
 
-		}
-	}
+	// 	}
+	// }
 
 	return newProposal, nil
+}
+
+func (b *LocalTxProvider) SignMsgs(ctx sdk.Context, msgs []sdk.Msg) sdk.Tx {
+	signer, err := b.Signer.RetreiveSigner(ctx, b.AcctKeeper)
+
+	if err != nil {
+		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
+		return nil
+	}
+	return b.Signer.BuildAndSignTx(ctx, signer, msgs)
 }
