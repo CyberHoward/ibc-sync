@@ -2,10 +2,12 @@ package abci
 
 import (
 	"context"
-	"cosmossdk.io/log"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+
+	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -33,6 +35,8 @@ func NewPrepareProposalHandler(
 	}
 }
 
+// Takes the votes and creates the proposal with them.
+// It does this by creating the special tx and appending it with the ClientUpdate msgs and Packet msgs, after which the other txs are added.
 func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		h.logger.Info(fmt.Sprintf("🛠️ :: Prepare Proposal"))
@@ -47,16 +51,67 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 				h.logger.Error(fmt.Sprintf("❌️ :: Unable to process Vote Extensions: %v", err))
 			}
 
+			// Goal: Deserialize the json data into the appropriate structs.
+			// 1. load the json
+			// 2. unmarshal the json into the struct
+			// 3. base64 decode the messages and proto deserialize them into the appropriate structs.
+			jsonFile, err := os.ReadFile("path/to/file.json")
+			if err != nil {
+				panic(err)
+			}
+
+			// Parse the JSON contents into FetchedIbcUpdate
+			var fetchedIbcUpdate FetchedIbcUpdate
+			err = json.Unmarshal(jsonFile, &fetchedIbcUpdate)
+			if err != nil {
+				panic(err)
+			}
+
+			// Base64 decode the messages into bytes
+			clientBytes, err := base64.StdEncoding.DecodeString(fetchedIbcUpdate.ClientBytes)
+			if err != nil {
+				panic(err)
+			}
+
+			packetBytes, err := base64.StdEncoding.DecodeString(fetchedIbcUpdate.PacketBytes)
+			if err != nil {
+				panic(err)
+			}
+
+			var ibcUpdate IbcUpdate
+			// Deserialize the bytes into the appropriate types
+			err = h.cdc.Unmarshal(packetBytes, &ibcUpdate.Packet)
+			if err != nil {
+				panic(err)
+			}
+
+			err = h.cdc.Unmarshal(clientBytes, &ibcUpdate.ClientUpdate)
+			if err != nil {
+				panic(err)
+			}
+
+			// TODO: Append Client Updates and Packet Commitments to proposal
+			ibc_tx := h.txProvider.SignMsgs(ctx, []sdk.Msg{&ibcUpdate.Packet, &ibcUpdate.ClientUpdate})
+
 			// Marshal Special Transaction
 			bz, err := json.Marshal(ve)
 			if err != nil {
 				h.logger.Error(fmt.Sprintf("❌️ :: Unable to marshal Vote Extensions: %v", err))
 			}
 
+			// Marshal IBC txs
+			ibc_bz, err := json.Marshal(ibc_tx)
+			if err != nil {
+				h.logger.Error(fmt.Sprintf("❌️ :: Unable to marshal IBC txs: %v", err))
+			}
+
 			// Append Special Transaction to proposal
 			proposalTxs = append(proposalTxs, bz)
+			proposalTxs = append(proposalTxs, ibc_bz)
+
 		}
 
+		// add txs to front of block
 		var txs []sdk.Tx
 		itr := h.mempool.Select(context.Background(), nil)
 		for itr != nil {
@@ -89,11 +144,13 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 	}
 }
 
+// Verifies that the updates available in the votes are included in the block proposal. If not, the proposal is rejected.
 func (h *ProcessProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (resp *abci.ResponseProcessProposal, err error) {
 		h.Logger.Info(fmt.Sprintf("⚙️ :: Process Proposal"))
 
-		// The first transaction will always be the Special Transaction
+		// The first transaction will always be the Special Transaction.
+		// It includes the height of the remote chain.
 		numTxs := len(req.Txs)
 		if numTxs == 1 {
 			h.Logger.Info(fmt.Sprintf("⚙️:: Number of transactions :: %v", numTxs))
@@ -106,124 +163,142 @@ func (h *ProcessProposalHandler) ProcessProposalHandler() sdk.ProcessProposalHan
 			if err != nil {
 				h.Logger.Error(fmt.Sprintf("❌️:: Error unmarshalling special Tx in Process Proposal :: %v", err))
 			}
-			if len(st.Bids) > 0 {
-				h.Logger.Info(fmt.Sprintf("⚙️:: There are bids in the Special Transaction"))
-				var bids []nstypes.MsgBid
-				for i, b := range st.Bids {
-					var bid nstypes.MsgBid
-					h.Codec.Unmarshal(b, &bid)
-					h.Logger.Info(fmt.Sprintf("⚙️:: Special Transaction Bid No %v :: %v", i, bid))
-					bids = append(bids, bid)
-				}
-				// Validate Bids in Tx
-				txs := req.Txs[1:]
-				ok, err := ValidateBids(h.TxConfig, bids, txs, h.Logger)
-				if err != nil {
-					h.Logger.Error(fmt.Sprintf("❌️:: Error validating bids in Process Proposal :: %v", err))
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
-				if !ok {
-					h.Logger.Error(fmt.Sprintf("❌️:: Unable to validate bids in Process Proposal :: %v", err))
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
-				h.Logger.Info("⚙️:: Successfully validated bids in Process Proposal")
-			}
+			// If some client updates are
+			// if st.NrClientUpdates > 0 {
+			// 	h.Logger.Info(fmt.Sprintf("⚙️:: There are updates in the Special Transaction"))
+
+			// TODO: Validate that the txs that were included in this proposal are actually the ones that were voted for.
+
+			// var updates []
+			// for i, b := range st.Bids {
+			// 	var bid nstypes.MsgBid
+			// 	h.Codec.Unmarshal(b, &bid)
+			// 	h.Logger.Info(fmt.Sprintf("⚙️:: Special Transaction Bid No %v :: %v", i, bid))
+			// 	bids = append(bids, bid)
+			// }
+			// Validate Client updates and Packet commitments in Tx
+			// txs := req.Txs[1:]
+			// ok, err := ValidateBids(h.TxConfig, bids, txs, h.Logger)
+			// if err != nil {
+			// 	h.Logger.Error(fmt.Sprintf("❌️:: Error validating bids in Process Proposal :: %v", err))
+			// 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			// }
+			// if !ok {
+			// 	h.Logger.Error(fmt.Sprintf("❌️:: Unable to validate bids in Process Proposal :: %v", err))
+			// 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			// }
+			h.Logger.Info("⚙️:: Successfully validated updates in Process Proposal")
+			// }
 		}
 
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }
 
+// Called when proposing a block. Checks all the votes and returns the special tx.
 func processVoteExtensions(req *abci.RequestPrepareProposal, log log.Logger) (SpecialTransaction, error) {
 	log.Info(fmt.Sprintf("🛠️ :: Process Vote Extensions"))
 
 	// Create empty response
 	st := SpecialTransaction{
 		0,
-		[][]byte{},
 	}
 
 	// Get Vote Ext for H-1 from Req
-	voteExt := req.GetLocalLastCommit()
-	votes := voteExt.Votes
+	// voteExt := req.GetLocalLastCommit()
+	// votes := voteExt.Votes
 
-	// Iterate through votes
-	var ve AppVoteExtension
-	for _, vote := range votes {
-		// Unmarshal to AppExt
-		err := json.Unmarshal(vote.VoteExtension, &ve)
-		if err != nil {
-			log.Error(fmt.Sprintf("❌ :: Error unmarshalling Vote Extension"))
-		}
+	// // Iterate through votes
+	// var ve AppVoteExtension
+	// var ibcSync IbcUpdate
+	// for _, vote := range votes {
+	// 	// Unmarshal to AppExt
+	// 	log.Error(fmt.Sprintf("❌ :: vote: %v", vote))
 
-		st.Height = int(ve.Height)
+	// 	err := json.Unmarshal(vote.VoteExtension, &ve)
+	// 	if err != nil {
+	// 		log.Error(fmt.Sprintf("❌ :: Error unmarshalling Vote Extensions"))
+	// 	}
 
-		// If Bids in VE, append to Special Transaction
-		if len(ve.Bids) > 0 {
-			log.Info("🛠️ :: Bids in VE")
-			for _, b := range ve.Bids {
-				st.Bids = append(st.Bids, b)
-			}
-		}
-	}
+	// 	// if len(ve.IbcUpdate) != 0 {
+	// 	// TODO: Collect all votes and determine which packets to commit.
+	// 	// For now we just use the first vote and commit that.
+	// 	err2 := json.Unmarshal(ve.IbcUpdate, &ibcSync)
+
+	// 	if err2 != nil {
+	// 		log.Error(fmt.Sprintf("❌ :: Error unmarshalling Vote Extension"))
+	// 	}
+
+	// 	// set all the fields
+	// 	st.Height = int(ve.Height)
+	// 	// }
+
+	// 	// If Bids in VE, append to Special Transaction
+	// 	// if len(ve.Bids) > 0 {
+	// 	// 	log.Info("🛠️ :: Bids in VE")
+	// 	// 	for _, b := range ve.Bids {
+	// 	// 		st.Bids = append(st.Bids, b)
+	// 	// 	}
+	// 	// }
+	// }
 
 	return st, nil
 }
 
-func ValidateBids(txConfig client.TxConfig, veBids []nstypes.MsgBid, proposalTxs [][]byte, logger log.Logger) (bool, error) {
-	var proposalBids []*nstypes.MsgBid
-	for _, txBytes := range proposalTxs {
-		txDecoder := txConfig.TxDecoder()
-		messages, err := txDecoder(txBytes)
-		if err != nil {
-			logger.Error(fmt.Sprintf("❌️:: Unable to decode proposal transactions :: %v", err))
+// func ValidateBids(txConfig client.TxConfig, veBids []nstypes.MsgBid, proposalTxs [][]byte, logger log.Logger) (bool, error) {
+// 	var proposalBids []*nstypes.MsgBid
+// 	for _, txBytes := range proposalTxs {
+// 		txDecoder := txConfig.TxDecoder()
+// 		messages, err := txDecoder(txBytes)
+// 		if err != nil {
+// 			logger.Error(fmt.Sprintf("❌️:: Unable to decode proposal transactions :: %v", err))
 
-			return false, err
-		}
-		sdkMsgs := messages.GetMsgs()
-		for _, m := range sdkMsgs {
-			switch m := m.(type) {
-			case *nstypes.MsgBid:
-				proposalBids = append(proposalBids, m)
-			}
-		}
-	}
+// 			return false, err
+// 		}
+// 		sdkMsgs := messages.GetMsgs()
+// 		for _, m := range sdkMsgs {
+// 			switch m := m.(type) {
+// 			case *nstypes.MsgBid:
+// 				proposalBids = append(proposalBids, m)
+// 			}
+// 		}
+// 	}
 
-	bidFreq := make(map[string]int)
-	totalVotes := len(veBids)
-	for _, b := range veBids {
-		h, err := Hash(&b)
-		if err != nil {
-			logger.Error(fmt.Sprintf("❌️:: Unable to produce bid frequency map :: %v", err))
+// 	bidFreq := make(map[string]int)
+// 	totalVotes := len(veBids)
+// 	for _, b := range veBids {
+// 		h, err := Hash(&b)
+// 		if err != nil {
+// 			logger.Error(fmt.Sprintf("❌️:: Unable to produce bid frequency map :: %v", err))
 
-			return false, err
-		}
-		bidFreq[h]++
-	}
+// 			return false, err
+// 		}
+// 		bidFreq[h]++
+// 	}
 
-	thresholdCount := int(float64(totalVotes) * 0.5)
-	logger.Info(fmt.Sprintf("🛠️ :: VE Threshold: %v", thresholdCount))
-	ok := true
-	logger.Info(fmt.Sprintf("🛠️ :: Number of Proposal Bids: %v", len(proposalBids)))
+// 	thresholdCount := int(float64(totalVotes) * 0.5)
+// 	logger.Info(fmt.Sprintf("🛠️ :: VE Threshold: %v", thresholdCount))
+// 	ok := true
+// 	logger.Info(fmt.Sprintf("🛠️ :: Number of Proposal Bids: %v", len(proposalBids)))
 
-	for _, p := range proposalBids {
+// 	for _, p := range proposalBids {
 
-		key, err := Hash(p)
-		if err != nil {
-			logger.Error(fmt.Sprintf("❌️:: Unable to hash proposal bid :: %v", err))
+// 		key, err := Hash(p)
+// 		if err != nil {
+// 			logger.Error(fmt.Sprintf("❌️:: Unable to hash proposal bid :: %v", err))
 
-			return false, err
-		}
-		freq := bidFreq[key]
-		logger.Info(fmt.Sprintf("🛠️ :: Frequency for Proposal Bid: %v", freq))
-		if freq < thresholdCount {
-			logger.Error(fmt.Sprintf("❌️:: Detected invalid proposal bid :: %v", p))
+// 			return false, err
+// 		}
+// 		freq := bidFreq[key]
+// 		logger.Info(fmt.Sprintf("🛠️ :: Frequency for Proposal Bid: %v", freq))
+// 		if freq < thresholdCount {
+// 			logger.Error(fmt.Sprintf("❌️:: Detected invalid proposal bid :: %v", p))
 
-			ok = false
-		}
-	}
-	return ok, nil
-}
+// 			ok = false
+// 		}
+// 	}
+// 	return ok, nil
+// }
 
 func Hash(m *nstypes.MsgBid) (string, error) {
 	b, err := json.Marshal(m)

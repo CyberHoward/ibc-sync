@@ -79,9 +79,6 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	apptypes "github.com/fatal-fruit/cosmapp/types"
-	nskeeper "github.com/fatal-fruit/ns/keeper"
-	nameservice "github.com/fatal-fruit/ns/module"
-	nstypes "github.com/fatal-fruit/ns/types"
 )
 
 var (
@@ -93,7 +90,6 @@ var (
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
-		nstypes.ModuleName:             nil,
 	}
 )
 
@@ -122,7 +118,6 @@ type App struct {
 	UpgradeKeeper         *upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
-	NameserviceKeeper     nskeeper.Keeper
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
@@ -198,7 +193,6 @@ func NewApp(
 		paramstypes.StoreKey,
 		upgradetypes.StoreKey,
 		consensusparamtypes.StoreKey,
-		nstypes.StoreKey,
 	)
 
 	// register streaming services
@@ -340,15 +334,6 @@ func NewApp(
 		),
 	)
 
-	app.NameserviceKeeper = nskeeper.NewKeeper(
-		appCodec,
-		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
-		runtime.NewKVStoreService(keys[nstypes.StoreKey]),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		app.BankKeeper,
-		DefaultDenom,
-	)
-
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
 			app.AccountKeeper, app.StakingKeeper, app,
@@ -362,7 +347,6 @@ func NewApp(
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		nameservice.NewAppModule(appCodec, app.NameserviceKeeper),
 	)
 
 	// Basic manager
@@ -403,7 +387,6 @@ func NewApp(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		nstypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
