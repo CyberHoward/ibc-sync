@@ -150,7 +150,7 @@ start-localnet: build
 	./build/cosmappd genesis gentx val1 1000000000uatom --chain-id cosmos-
 	./build/cosmappd genesis collect-gentxs
 	sed -i.bak'' 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025uatom"/' ~/.cosmappd/config/app.toml
-	#./build/cosmappd start
+	./build/cosmappd start --val-key val1
 ###############################################################################
 ###                           Tests & Simulation                            ###
 ###############################################################################
