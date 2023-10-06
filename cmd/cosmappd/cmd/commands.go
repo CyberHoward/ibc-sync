@@ -157,7 +157,7 @@ func newApp(
 
 	valKey, ok := appOpts.Get(types.FlagValKey).(string)
 	if !ok {
-		valKey = "val"
+		valKey = "val0"
 	}
 
 	return app.NewApp(

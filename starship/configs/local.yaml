@@ -1,0 +1,44 @@
+chains:
+  - name: osmosis-1
+    type: osmosis
+    numValidators: 1
+    ports:
+      rest: 1313
+      rpc: 26653
+      grpc: 9093
+      faucet: 8003
+  - name: cosmapp-1
+    type: custom
+    numValidators: 1
+    image: anmol1696/ibc-sync:latest
+    home: /root/.cosmappd
+    binary: cosmappd
+    prefix: cosmos
+    denom: stake
+    coins: 100000000000000stake
+    hdPath: m/44'/118'/0'/0/0
+    coinType: 118
+    repo: https://github.com/CyberHoward/ibc-sync
+    ports:
+      rest: 1317
+      rpc: 26657
+      grpc: 9097
+      faucet: 8007
+
+relayers:
+  - name: osmos-cosmapp
+    type: hermes
+    replicas: 1
+    chains:
+      - osmosis-1
+      - cosmapp-1
+
+explorer:
+  enabled: true
+  ports:
+    rest: 8080
+
+registry:
+  enabled: true
+  ports:
+    rest: 8081
