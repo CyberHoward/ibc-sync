@@ -12,6 +12,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+
 	"github.com/fatal-fruit/cosmapp/mempool"
 	"github.com/fatal-fruit/cosmapp/provider"
 	nstypes "github.com/fatal-fruit/ns/types"
@@ -45,17 +48,23 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 		// Get Vote Extensions
 		if req.Height > 2 {
 
-			// Get Special Transaction
+			// Construct Special Transaction
 			ve, err := processVoteExtensions(req, h.logger)
 			if err != nil {
 				h.logger.Error(fmt.Sprintf("❌️ :: Unable to process Vote Extensions: %v", err))
 			}
 
-			// Goal: Deserialize the json data into the appropriate structs.
+			// Deserialize the json data into the appropriate structs.
+			// JSON format is as follows:
+			// {
+			//	"height": "height of the remote chain",
+			// 	"client_updates": [ "base64 encoded client update", "base64 encoded client update"]
+			// 	"packet_updates": ["base64 encoded packet commitment", "base64 encoded packet commitment"]
+			// }
 			// 1. load the json
 			// 2. unmarshal the json into the struct
 			// 3. base64 decode the messages and proto deserialize them into the appropriate structs.
-			jsonFile, err := os.ReadFile("path/to/file.json")
+			jsonFile, err := os.ReadFile("/Users/robin/Programming/External/abci-workshop/data.json")
 			if err != nil {
 				panic(err)
 			}
@@ -67,31 +76,51 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 				panic(err)
 			}
 
-			// Base64 decode the messages into bytes
-			clientBytes, err := base64.StdEncoding.DecodeString(fetchedIbcUpdate.ClientBytes)
-			if err != nil {
-				panic(err)
+			// Parse client update msgs
+			var clientUpdateMsgs []clienttypes.MsgUpdateClient
+			for _, clientUpdate := range fetchedIbcUpdate.ClientUpdates {
+				// Base64 decode the messages into bytes
+				h.logger.Error(fmt.Sprintf("❌️ client_update: %v", clientUpdate))
+				clientBytes, err := base64.StdEncoding.DecodeString(clientUpdate)
+				if err != nil {
+					panic(err)
+				}
+
+				h.logger.Error(fmt.Sprintf("❌️ client_bytes: %v", clientBytes))
+
+				var msg clienttypes.MsgUpdateClient
+
+				h.cdc.
+					err = h.cdc.Unmarshal(clientBytes, &msg)
+				if err != nil {
+					panic(err)
+				}
+				h.logger.Error(fmt.Sprintf("❌️ client_msg: %v", msg))
+
+				clientUpdateMsgs = append(clientUpdateMsgs, msg)
 			}
 
-			packetBytes, err := base64.StdEncoding.DecodeString(fetchedIbcUpdate.PacketBytes)
-			if err != nil {
-				panic(err)
+			// Parse packet msgs
+			var packetUpdateMsgs []channeltypes.MsgRecvPacket
+			for _, packetUpdate := range fetchedIbcUpdate.Packets {
+				// Base64 decode the messages into bytes
+				packetBytes, err := base64.StdEncoding.DecodeString(packetUpdate)
+				if err != nil {
+					panic(err)
+				}
+
+				var msg channeltypes.MsgRecvPacket
+				err = h.cdc.Unmarshal(packetBytes, &msg)
+				if err != nil {
+					panic(err)
+				}
+				packetUpdateMsgs = append(packetUpdateMsgs, msg)
 			}
 
-			var ibcUpdate IbcUpdate
-			// Deserialize the bytes into the appropriate types
-			err = h.cdc.Unmarshal(packetBytes, &ibcUpdate.Packet)
-			if err != nil {
-				panic(err)
-			}
-
-			err = h.cdc.Unmarshal(clientBytes, &ibcUpdate.ClientUpdate)
-			if err != nil {
-				panic(err)
-			}
+			var Msgs []sdk.Msg = []sdk.Msg{&clientUpdateMsgs[0.], &packetUpdateMsgs[0.]}
 
 			// TODO: Append Client Updates and Packet Commitments to proposal
-			ibc_tx := h.txProvider.SignMsgs(ctx, []sdk.Msg{&ibcUpdate.Packet, &ibcUpdate.ClientUpdate})
+			ibc_tx := h.txProvider.SignMsgs(ctx, Msgs)
 
 			// Marshal Special Transaction
 			bz, err := json.Marshal(ve)

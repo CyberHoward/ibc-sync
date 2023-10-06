@@ -3,29 +3,14 @@ package abci
 // import (
 // 	"testing"
 
+// 	"cosmossdk.io/log"
 // 	"cosmossdk.io/math"
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
+// 	"github.com/fatal-fruit/cosmapp/testutils"
 // 	nstypes "github.com/fatal-fruit/ns/types"
 // 	"github.com/stretchr/testify/require"
 // )
 
-// func TestBidHash(t *testing.T) {
-// 	bids := []*nstypes.MsgBid{
-// 		{
-// 			"bob.cosmos",
-// 			"cosmos1c3f2e2d4wwhaud70h3c7rah8aede8kplevxe3j",
-// 			"cosmos1c3f2e2d4wwhaud70h3c7rah8aede8kplevxe3j",
-// 			sdk.Coins{sdk.NewCoin("uatom", math.NewInt(5))},
-// 		},
-// 	}
-
-// 	for _, b := range bids {
-// 		_, err := Hash(b)
-// 		require.NoError(t, err)
-// 	}
-// }
-
-// TODO: Fix me
 // func TestValidateProposal(t *testing.T) {
 // 	testEncConfig := testutils.MakeTestEncodingConfig()
 // 	testTxConfig := testEncConfig.TxConfig
