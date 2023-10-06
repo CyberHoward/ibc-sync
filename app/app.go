@@ -507,6 +507,7 @@ func NewApp(
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
+	app.MountMemoryStores(memKeys)
 
 	// <Upgrade handler setup here>
 	// initialize BaseApp
