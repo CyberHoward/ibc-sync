@@ -139,13 +139,13 @@ type App struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	CapabilityKeeper      *capabilitykeeper.Keeper
 
+	IBCKeeper *ibckeeper.Keeper
+
 	IBCFeeKeeper   ibcfeekeeper.Keeper
 	TransferKeeper ibctransferkeeper.Keeper
 
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-
-	IBCKeeper *ibckeeper.Keeper
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
