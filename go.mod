@@ -9,12 +9,14 @@ require (
 	cosmossdk.io/log v1.2.1
 	cosmossdk.io/store v1.0.0-rc.0
 	cosmossdk.io/tools/confix v0.0.0-20231006104034-68a21f6f0ea8
+	cosmossdk.io/x/feegrant v0.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/x/tx v0.10.0
 	cosmossdk.io/x/upgrade v0.0.0-20230915171831-2196edacb99d
 	github.com/cometbft/cometbft v0.38.0
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/cosmos-sdk v0.50.0-rc.1
 	github.com/cosmos/gogoproto v1.4.11
+	github.com/cosmos/ibc-go/modules/capability v1.0.0-rc6
 	github.com/fatal-fruit/ns v0.0.0-20230904112332-434c50dc9738
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.7.0
@@ -23,10 +25,7 @@ require (
 	google.golang.org/protobuf v1.31.0
 )
 
-require (
-	cosmossdk.io/math v1.1.3-rc.1 // indirect
-	github.com/cosmos/ibc-go/modules/capability v1.0.0-rc6 // indirect
-)
+require cosmossdk.io/math v1.1.3-rc.1 // indirect
 
 require (
 	cloud.google.com/go v0.110.7 // indirect
