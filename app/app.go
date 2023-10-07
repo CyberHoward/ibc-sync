@@ -1,12 +1,13 @@
 package app
 
 import (
-	"cosmossdk.io/x/feegrant"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"cosmossdk.io/x/feegrant"
 
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
@@ -278,7 +279,7 @@ func NewApp(
 		Logger: logger,
 		Codec:  app.appCodec,
 		Signer: provider.LocalSigner{
-			KeyName:    "val0",
+			KeyName:    valKeyName,
 			KeyringDir: homePath,
 		},
 		TxConfig:   app.txConfig,

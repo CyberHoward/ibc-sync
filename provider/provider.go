@@ -30,6 +30,7 @@ import (
 type TxProvider interface {
 	BuildProposal(ctx sdk.Context, proposalTxs []sdk.Tx) ([]sdk.Tx, error)
 	SignMsgs(ctx sdk.Context, msgs []sdk.Msg) sdk.Tx
+	SignerAddr(ctx sdk.Context, acctKeeper authkeeper.AccountKeeper) (sdk.AccAddress, error)
 	// getMatchingBid(ctx sdk.Context, bid *nstypes.MsgBid) sdk.Tx
 }
 
@@ -170,4 +171,15 @@ func (b *LocalTxProvider) SignMsgs(ctx sdk.Context, msgs []sdk.Msg) sdk.Tx {
 		return nil
 	}
 	return b.Signer.BuildAndSignTx(ctx, signer, msgs)
+}
+
+func (b *LocalTxProvider) SignerAddr(ctx sdk.Context, acctKeeper authkeeper.AccountKeeper) (sdk.AccAddress, error) {
+	signer, err := b.Signer.RetreiveSigner(ctx, acctKeeper)
+
+	if err != nil {
+		b.Logger.Error(fmt.Sprintf("Error retrieving signer: %v", err))
+		return nil, err
+	}
+
+	return signer.GetAddress(), nil
 }

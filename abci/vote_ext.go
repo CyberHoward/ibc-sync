@@ -38,6 +38,8 @@ func (h *VoteExtHandler) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, fmt.Errorf("Error marshalling IbcUpdate: %w", err)
 		}
 
+		// TODO: Fetch IBC data with Go here. For now, we just use the local json file.
+
 		// Create vote extension
 		voteExt := AppVoteExtension{
 			Height:    req.Height,

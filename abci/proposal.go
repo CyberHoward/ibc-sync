@@ -15,6 +15,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+
 	"github.com/fatal-fruit/cosmapp/mempool"
 	"github.com/fatal-fruit/cosmapp/provider"
 	nstypes "github.com/fatal-fruit/ns/types"
@@ -64,6 +66,8 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 			// 1. load the json
 			// 2. unmarshal the json into the struct
 			// 3. base64 decode the messages and proto deserialize them into the appropriate structs.
+
+			// TODO: Move this logic to the vote extension step and use the submitted votes here.
 			jsonFile, err := os.ReadFile("/Users/robin/Programming/External/abci-workshop/data.json")
 			if err != nil {
 				panic(err)
@@ -76,17 +80,16 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 				panic(err)
 			}
 
+			signerAddr, err := h.txProvider.SignerAddr(ctx, authkeeper.AccountKeeper{})
+
 			// Parse client update msgs
 			var clientUpdateMsgs []clienttypes.MsgUpdateClient
 			for _, clientUpdate := range fetchedIbcUpdate.ClientUpdates {
 				// Base64 decode the messages into bytes
-				h.logger.Error(fmt.Sprintf("❌️ client_update: %v", clientUpdate))
 				clientBytes, err := base64.StdEncoding.DecodeString(clientUpdate)
 				if err != nil {
 					panic(err)
 				}
-
-				h.logger.Error(fmt.Sprintf("❌️ client_bytes: %v", clientBytes))
 
 				var msg clienttypes.MsgUpdateClient
 				err = h.cdc.Unmarshal(clientBytes, &msg)
@@ -94,6 +97,8 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 					panic(err)
 				}
 				h.logger.Error(fmt.Sprintf("❌️ client_msg: %v", msg))
+
+				msg.Signer = signerAddr.String()
 
 				clientUpdateMsgs = append(clientUpdateMsgs, msg)
 			}
@@ -112,10 +117,13 @@ func (h *PrepareProposalHandler) PrepareProposalHandler() sdk.PrepareProposalHan
 				if err != nil {
 					panic(err)
 				}
+				msg.Signer = signerAddr.String()
 				packetUpdateMsgs = append(packetUpdateMsgs, msg)
 			}
 
-			var Msgs []sdk.Msg = []sdk.Msg{&clientUpdateMsgs[0.], &packetUpdateMsgs[0.]}
+			var Msgs []sdk.Msg = []sdk.Msg{&clientUpdateMsgs[0], &packetUpdateMsgs[0]}
+
+			h.logger.Error(fmt.Sprintf("❌️ :: Messages to sign: %v", Msgs))
 
 			// TODO: Append Client Updates and Packet Commitments to proposal
 			ibc_tx := h.txProvider.SignMsgs(ctx, Msgs)

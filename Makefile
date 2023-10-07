@@ -142,6 +142,7 @@ start-localnet: build
 	./build/cosmappd config set client chain-id cosmos-1
 	./build/cosmappd config set client keyring-backend test
 	./build/cosmappd keys add val1
+	
 	./build/cosmappd keys add alice
 	./build/cosmappd keys add bob
 	./build/cosmappd genesis add-genesis-account val1 10000000000000000000000000uatom
